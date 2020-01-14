@@ -1,7 +1,5 @@
 // FIXME: Make me pass! Diff budget: 25 lines.
 
-// I AM NOT DONE
-
 #[derive(Debug)]
 enum Duration {
     MilliSeconds(u64),
@@ -10,6 +8,22 @@ enum Duration {
 }
 
 // What traits does `Duration` need to implement?
+
+impl PartialEq for Duration {
+    fn eq(&self, other: &Self) -> bool {
+        self.toMs() == other.toMs()
+    }
+}
+
+impl Duration {
+    fn toMs(&self) -> u64 {
+        match *self {
+            Duration::MilliSeconds(s) => s,
+            Duration::Seconds(s) => (s * 1000) as u64,
+            Duration::Minutes(s) => (s as u64) * 60 * 1000
+        }
+    }
+}
 
 #[test]
 fn traits() {

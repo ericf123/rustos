@@ -2,15 +2,19 @@
 // Make me compile without changing line 13!
 // Execute `rustlings hint move_semantics2` for hints :)
 
-// I AM NOT DONE
-
 fn main() {
     let vec0 = Vec::new();
 
     let mut vec1 = fill_vec(vec0);
 
-    // Do not change the following line!
-    println!("{} has length {} content `{:?}`", "vec0", vec0.len(), vec0);
+    // enclosing in this block makes vec0 out of scope
+    // when we push to vec1 so borrow should be returned by then
+    {
+        let vec0 = &vec1;
+        // Do not change the following line!
+        println!("{} has length {} content `{:?}`", "vec0", vec0.len(), vec0);
+    }
+    
 
     vec1.push(88);
 
