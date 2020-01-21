@@ -23,5 +23,15 @@ fn spin_sleep_ms(ms: usize) {
 unsafe fn kmain() -> ! {
     // FIXME: STEP 1: Set GPIO Pin 16 as output.
     // FIXME: STEP 2: Continuously set and clear GPIO 16.
-    loop {}
+    let curr_fsel1 = GPIO_FSEL1.read_volatile(); 
+    GPIO_FSEL1.write_volatile(curr_fsel1 | (0b001 << 18));
+    loop {
+        let curr_set0 = GPIO_SET0.read_volatile();
+        GPIO_SET0.write_volatile(curr_set0 | (0b1 << 16));
+        spin_sleep_ms(200);
+
+        let curr_clr0 = GPIO_CLR0.read_volatile();
+        GPIO_CLR0.write_volatile(curr_clr0 | (0b1 << 16));
+        spin_sleep_ms(200);
+    }
 }
