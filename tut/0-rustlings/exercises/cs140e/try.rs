@@ -10,7 +10,7 @@ struct ErrorB;
 #[derive(Debug)]
 enum Error {
     A(ErrorA),
-    B(ErrorB),
+    B(ErrorB)
 }
 
 impl StdError for Error {}
@@ -24,7 +24,6 @@ impl fmt::Display for Error {
     }
 }
 
-// What traits does `Error` need to implement?
 fn do_a() -> Result<u16, ErrorA> {
     Err(ErrorA)
 }
@@ -37,4 +36,4 @@ fn do_both() -> Result<(u16, u32), Error> {
     Ok((do_a().unwrap(), do_b().unwrap()))
 }
 
-fn main() {}
+fn main() { }

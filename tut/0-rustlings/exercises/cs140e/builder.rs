@@ -29,7 +29,6 @@ impl ToString for Builder {
         }
     }
 }
-
 // Do not modify this function.
 #[test]
 fn builder() {
@@ -57,7 +56,9 @@ fn builder() {
 
     assert_eq!(b, "bye now! 200");
 
-    let c = Builder::default().string("heap!".to_owned()).to_string();
+    let c = Builder::default()
+        .string("heap!".to_owned())
+        .to_string();
 
     assert_eq!(c, "heap!");
 }
