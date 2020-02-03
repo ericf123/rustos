@@ -1,0 +1,3 @@
+The difference between Volatile and Unique is that Unique synchronizes
+access to the underlying pointer when the pointer's type is Sync, 
+whereas Volatile does not do this.

@@ -1,0 +1,5 @@
+The ReadVolatile and WriteVolatile traits make it impossible to write 
+and read, respectively, by changing the return type of inner().
+ReadVolatile returns a const pointer, while WriteVolatile returns
+a mutable pointer.
+The also only provide read(), and write() methods, respecitively.
