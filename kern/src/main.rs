@@ -41,10 +41,11 @@ unsafe fn kmain() -> ! {
 
     //let mut my_uart = MiniUart::new();
     loop {
-        let mut my_console = console::CONSOLE.lock();
-        let byte = my_console.read_byte();
-        kprintln!("You typed: {}", byte as char);
+        //let mut my_console = console::CONSOLE.lock();
+        //let byte = my_console.read_byte();
+        //kprintln!("You typed: {}", byte as char);
         //kprintln!("hello eric");
         //my_uart.write_str("hello world\n");
+        shell::shell("> ");
     }
 }
