@@ -19,6 +19,7 @@ use pi::timer;
 use pi::gpio::*;
 use pi::uart::*;
 use core::time::Duration;
+use core::fmt::Write;
 
 const GPIO_BASE: usize = 0x3F000000 + 0x200000;
 const GPIO_FSEL1: *mut u32 = (GPIO_BASE + 0x04) as *mut u32;
@@ -38,9 +39,12 @@ unsafe fn kmain() -> ! {
         timer::spin_sleep(Duration::from_millis(200));
     }*/
 
-    let mut my_uart = MiniUart::new();
+    //let mut my_uart = MiniUart::new();
     loop {
-        let byte = my_uart.read_byte();
-        my_uart.write_byte(byte);
+        let mut my_console = console::CONSOLE.lock();
+        let byte = my_console.read_byte();
+        kprintln!("You typed: {}", byte as char);
+        //kprintln!("hello eric");
+        //my_uart.write_str("hello world\n");
     }
 }
