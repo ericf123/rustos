@@ -1,0 +1,3 @@
+In blinky, we implemented the transitions from Start into Output, as well as the SET and CLEAR self-transitions
+from and into the output state. This was all we required to blink the LED because we didn't need to make
+use of the alt functions or input.

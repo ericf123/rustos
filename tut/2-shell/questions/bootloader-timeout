@@ -1,0 +1,5 @@
+The sender would stall indefinitely if the receiver sends the NAK packet indicating ready to receive before
+the sender is up. Since the bootloader begins almost immediately when the Pi boots, if we don't synchronize
+the Pi's boot and the transmission of the main kernel, the initial NAK could get lost and cause the sender
+to be in the waiting state indefinitely. Using a small timeout and an infinite loop helps us avoid this
+problem because we just keep retrying the reception until the sender is ready to send us data.

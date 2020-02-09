@@ -1,0 +1,4 @@
+StackVec requires clone for pop because the pop function is implmemented using a mutable reference to self,
+so that calling pop does not consume the the entire StackVec. Because of this, we cannot return an Option<T>,
+as that would move underlying data outside of the mutable reference, which the borrow checker disallows. 
+Thus, by cloning the underlying data and returning it, we can avoid violating the Rust's borrowing rules.

@@ -1,0 +1,4 @@
+This bound is required because the backing buffer for the StackVec must live at least as long as the 
+StackVec itself. If the StackVec lived longer than it's backing data struture, it could cause memory problems
+if the backing structure is dropped before the StackVec is and you try to use the StackVec because the 
+StackVec will no longer have the data it needs to operate.

@@ -1,0 +1,3 @@
+The Console type has its write_fmt called during this operation. This happens because MutexGuard implements deref
+by returning a reference to the underlying data. Since Console implements the fmt::Write trait by providing
+a write_str implementation, we get the write_fmt implementation for free on this type.

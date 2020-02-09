@@ -40,6 +40,10 @@ impl Console {
     pub fn write_byte(&mut self, byte: u8) {
         self.inner().write_byte(byte);
     }
+
+    pub fn has_byte(&mut self) -> bool {
+        self.inner().has_byte()
+    }
 }
 
 impl io::Read for Console {

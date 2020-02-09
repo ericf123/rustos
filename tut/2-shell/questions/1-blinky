@@ -1,0 +1,2 @@
+To blink GPIO pin 27, we would use bits 23-21 of GPFSEL2, bit 27 of GPSET0, and bit 27 of GPCLR0. 
+Pin 27 maps to the SD Card using I2C. 

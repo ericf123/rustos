@@ -1,0 +1,3 @@
+Deref and DerefMut are needed to be able to index the StackVec like an array or slice. 
+Removing Deref breaks tests that read a value from the StackVec using syntax like vec[i],
+and removing DerefMut breaks test that assign a value using the same syntax (e.g. vec[i] = 0).

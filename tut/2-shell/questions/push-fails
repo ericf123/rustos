@@ -1,0 +1,3 @@
+StackVec::push() can fail because StackVec is backed by a pre-allocated buffer that is not resizable.
+Vec, on the other hand is backed by a heap-allocated data structure, and the Vec implementation handles
+resizing of the backing buffer on demand, which makes it so that Vec::push() doesn't fail (except possibly in the case of OOM).

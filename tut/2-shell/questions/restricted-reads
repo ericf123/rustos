@@ -1,0 +1,2 @@
+Our code enforces the read-only property of both the CLO and CHI registers by wrapping them in 
+ReadVolitile. This wrapper does not allow the user of it to write to the underlying register.

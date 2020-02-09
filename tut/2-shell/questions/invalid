@@ -1,0 +1,4 @@
+structop knows to reject invalid values based on the type of the struct field that it is trying to 
+parse the flag into. For example, the -f flag is mapped to a struct field with the serial::core::FlowControl
+type, which is an Enum with three values (FlowNone, FlowSoftware, FlowHardware). It's not possible to coerce
+the string value of "idk" to one of these three enum variants, so structop knows to reject this input.

@@ -1,0 +1,6 @@
+If we let the user choose the initial state for a GPIO pin, they might not set the function properly, 
+which would cause undefined/unexpected behavior of the pin. For example, if someone tries to use 
+a pin as an output and only uses the set() and clear() functions, the pin will not be setup as 
+an output and the code will not function as the user expects. By forcing the user to transition
+the pin from the uninitialized state, it enforces the proper function selection before 
+using the pin.

@@ -1,0 +1,9 @@
+We return a container rather than the direct mutable reference because we need to force the unlocking
+of the mutex when the mutable reference is no longer needed by the user. If we only returned the mutable reference
+itself, two problems could arise. First, the consumer of the mutable reference could unlock the mutex while 
+still maintaining a mutable reference to the underlying data, which would violate the mutual exclusion property
+of the mutex. This would be problematic because the nature of the underlying data is that the borrow checker
+cannot prevent data races, so we need to insure this doesn't happen in order to have safe code. Second,
+the user could forget to unlock the mutex when they no longer need it, which would lead to deadlock. 
+By wrapping the mutable reference in a container, we insure that the lock is always released when the container
+is dropped, and not unlocked before it is dropped, avoiding both of the above problems.

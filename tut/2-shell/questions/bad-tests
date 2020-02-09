@@ -1,0 +1,5 @@
+XMODEM is harder to test than sending raw data, because XMODEM is an interactive protocol, meaning the 
+receiver and the sender have to work together in order to transmit packets of data and reconstruct the
+original message. In order to test this, we would have to spin up an XMODEM receiver that is bound to 
+some socket, while sending data in the raw does not have this restriction because we can just passively
+take the output of the original command and compare it to the input.

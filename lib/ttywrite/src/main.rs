@@ -54,8 +54,6 @@ fn main() {
     let opt = Opt::from_args();
     let mut port = serial::open(&opt.tty_path).expect("path points to invalid TTY");
 
-    // FIXME: Implement the `ttywrite` utility.
-
     let mut input: Box<dyn BufRead> = match opt.input {
         Some(path) => Box::new(BufReader::new(File::open(path).expect("input file not found"))),
         None => Box::new(BufReader::new(io::stdin()))

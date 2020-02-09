@@ -1,0 +1,8 @@
+The shell uses StackVec to store the parsed argument vector from the command line.
+It uses Console to read and write data, which in turn uses the MiniUart implementation to communicate
+with the Raspberry Pi over serial. The MiniUart driver makes use of our GPIO driver under the hood 
+to setup GPIO pins 14 and 15 for UART using alt function 5. MiniUart also uses the timer driver to 
+set read timeouts. 
+All of these drivers make use of the Volatile structs to wrap the underlying MMIO registers in a safe
+API.
+

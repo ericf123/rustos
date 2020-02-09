@@ -194,15 +194,8 @@ mod uart_io {
     // before returning.
     impl io::Write for MiniUart {
         fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-            //let mut count = 0;
-            // TODO check
             for byte in buf {
-                /*if *byte == b'\n' {
-                    self.write_byte(b'\r');
-                }*/
-
                 self.write_byte(*byte);
-                //count += 1;
             }
 
             Ok(buf.len())
