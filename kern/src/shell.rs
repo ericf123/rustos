@@ -1,9 +1,19 @@
+use shim::io;
+use shim::path::{Path, PathBuf};
+
 use stack_vec::StackVec;
+
+use pi::atags::Atags;
+
+use fat32::traits::FileSystem;
+use fat32::traits::{Dir, Entry};
 
 use crate::console::{kprint, kprintln, CONSOLE};
 use pi::gpio::Gpio;
 use pi::timer;
 use core::time::Duration;
+use crate::ALLOCATOR;
+use crate::FILESYSTEM;
 
 const BOOTLOADER_START_ADDR: usize = 0x4000000;
 const BOOTLOADER_START: *mut u8 = BOOTLOADER_START_ADDR as *mut u8;
@@ -79,7 +89,7 @@ impl<'a> Command<'a> {
 }
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
-/// returns if the `exit` command is called.
+/// never returns.
 pub fn shell(prefix: &str) -> ! {
     // wait for user to be ready
     loop {
