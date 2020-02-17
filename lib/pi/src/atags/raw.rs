@@ -18,9 +18,20 @@ impl Atag {
     pub const VIDEOLFB: u32 = 0x54410008;
     pub const CMDLINE: u32 = 0x54410009;
 
-    /// FIXME: Returns the ATAG following `self`, if there is one.
+    /// Returns the ATAG following `self`, if there is one.
     pub fn next(&self) -> Option<&Atag> {
-        unimplemented!()
+        if self.tag == Atag::NONE {
+            None
+        } else {
+            unsafe {
+                // convert self to a raw pointer
+                let curr_tag_ptr = self as *const Self as *const u32;
+                // add the offset
+                let next_tag_ptr = curr_tag_ptr.add(self.dwords as usize) as *const Atag;
+                // deref into &Atag
+                Some(&*next_tag_ptr)
+            }        
+        }
     }
 }
 

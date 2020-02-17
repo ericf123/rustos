@@ -17,6 +17,7 @@ PROJ_PKG=(build-essential
      linux-image-extra-virtual)
 QEMU_DEP=(libglib2.0-dev libpixman-1-dev zlib1g-dev)
 
+<<COMMENT
 # install pkgs
 if [[ $($BIN/get-dist) == "ubuntu" ]]; then
     echo "[!] Installing packages"
@@ -25,6 +26,7 @@ if [[ $($BIN/get-dist) == "ubuntu" ]]; then
     sudo apt install -y ${PROJ_PKG[*]}
     sudo apt install -y ${QEMU_DEP[*]}
 fi
+COMMENT
 
 # install rustup
 if ! [ -x "$(command -v rustup)" ]; then

@@ -154,6 +154,13 @@ pub fn shell(prefix: &str) -> ! {
                     },
                     "ldkern" => ldkern(),
                     "blinkyboi" => blinkyboi(),
+                    "panic" => panic!(),
+                    "atags" => {
+                        kprintln!("");
+                        for atag in Atags::get() {
+                            kprintln!("{:#?}", atag);
+                        }
+                    }
                     other => {
                         kprint!("\nunknown command: {}", other);
                     }

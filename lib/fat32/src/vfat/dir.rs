@@ -23,7 +23,7 @@ pub struct VFatRegularDirEntry {
     // FIXME: Fill me in.
 }
 
-const_assert_size!(VFatRegularDirEntry, 32);
+//const_assert_size!(VFatRegularDirEntry, 32);
 
 #[repr(C, packed)]
 #[derive(Copy, Clone)]
@@ -31,7 +31,7 @@ pub struct VFatLfnDirEntry {
     // FIXME: Fill me in.
 }
 
-const_assert_size!(VFatLfnDirEntry, 32);
+//const_assert_size!(VFatLfnDirEntry, 32);
 
 #[repr(C, packed)]
 #[derive(Copy, Clone)]
@@ -39,7 +39,7 @@ pub struct VFatUnknownDirEntry {
     // FIXME: Fill me in.
 }
 
-const_assert_size!(VFatUnknownDirEntry, 32);
+//const_assert_size!(VFatUnknownDirEntry, 32);
 
 pub union VFatDirEntry {
     unknown: VFatUnknownDirEntry,
@@ -47,7 +47,7 @@ pub union VFatDirEntry {
     long_filename: VFatLfnDirEntry,
 }
 
-impl<HANDLE: VFatHandle> Dir<HANDLE> {
+/*impl<HANDLE: VFatHandle> Dir<HANDLE> {
     /// Finds the entry named `name` in `self` and returns it. Comparison is
     /// case-insensitive.
     ///
@@ -65,4 +65,4 @@ impl<HANDLE: VFatHandle> Dir<HANDLE> {
 
 impl<HANDLE: VFatHandle> traits::Dir for Dir<HANDLE> {
     // FIXME: Implement `trait::Dir` for `Dir`.
-}
+}*/
