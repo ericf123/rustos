@@ -1,0 +1,9 @@
+To manually find /a/b/c.txt, first you would look at the byte at offset 44, which gives the cluster address
+of the root directory, which is often 2. You would then traverse the root directory cluster chain's directory
+entries, looking for a file with the name "b", which is marked as a directory (indicated by value 0x10 at
+byte offset 11 in the directory entry). You would then concatenate the two bytes starting at offset 20 with the
+two bytes starting at offset 26 to get the starting cluster address for the "b" directory. Once at that cluster,
+we would repeat the process of scanning the directory's cluster chain for an entry with the name "a" and file
+extension "txt", by looking at the first 11 bytes of the directory entries. "c.txt" then has a starting cluster 
+address whose value is then calculated by concatenating the two bytes starting at offset 20 with the
+two bytes starting at offset 26.

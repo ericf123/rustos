@@ -155,12 +155,18 @@ pub fn shell(prefix: &str) -> ! {
                     "ldkern" => ldkern(),
                     "blinkyboi" => blinkyboi(),
                     "panic" => panic!(),
-                    "atags" => {
+                    "lsatags" => {
                         kprintln!("");
                         for atag in Atags::get() {
                             kprintln!("{:#?}", atag);
                         }
-                    }
+                    },
+                    "memmap" => {
+                        kprintln!("\n{:#?}", crate::allocator::memory_map().unwrap());
+                    },
+                    /*"test_string" => {
+                        String::from("hello");
+                    }*/
                     other => {
                         kprint!("\nunknown command: {}", other);
                     }

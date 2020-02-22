@@ -1,0 +1,2 @@
+The max file size is determined by the width of the file size field in the directory entry. Since this field
+is 4 bytes wide, the max file size is 2^32 bytes, or 4GiB.

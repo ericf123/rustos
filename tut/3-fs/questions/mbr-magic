@@ -1,0 +1,2 @@
+To determine if sector 0 contains a valid MBR, we can check bytes at offsets 510 and 511, and compare them
+to the valid bootsector signature of 0x55AA

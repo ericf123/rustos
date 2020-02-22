@@ -1,0 +1,3 @@
+The byte at offset 11 of the directory entry determines whether or not is an LFN entry. 
+If the byte at offset 11 has value 0x0F, it is an LFN entry, all other values indicate
+that it is not an LFN entry.
