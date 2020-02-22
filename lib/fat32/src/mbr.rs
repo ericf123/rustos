@@ -44,8 +44,8 @@ impl fmt::Debug for PartitionEntry {
                    END CHS:         {:?}\n\
                    RELATIVE SECTOR: {:?}\n\
                    TOTAL SECTORS:   {:?}",
-                self.boot_indicator, is_bootable, self._start_chs, self.partition_type,
-                self._end_chs, self.relative_sector, self.total_sectors)
+                &{self.boot_indicator}, is_bootable, &{self._start_chs}, &{self.partition_type},
+                &{self._end_chs}, &{self.relative_sector}, &{self.total_sectors})
     }
 }
 
@@ -64,16 +64,16 @@ impl fmt::Debug for MasterBootRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DISK ID:   {:?}\n\
                    -----PARTITION 1-----\n\
-                   {:?}\n
+                   {:?}\n\
                    -----PARTITION 2-----\n\
-                   {:?}\n
+                   {:?}\n\
                    -----PARTITION 3-----\n\
-                   {:?}\n
+                   {:?}\n\
                    -----PARTITION 4-----\n\
-                   {:?}\n
+                   {:?}\n\
                    SIGNATURE: {:?}", 
-                self.disk_id, self.partition_table[0], self.partition_table[1],
-                self.partition_table[2], self.partition_table[3], self.signature)
+                &{self.disk_id}, &{&self.partition_table[0]}, &{&self.partition_table[1]},
+                &{&self.partition_table[2]}, &{&self.partition_table[3]}, &{self.signature})
     }
 }
 
@@ -109,7 +109,6 @@ impl MasterBootRecord {
 
         // transmute the buffer into an MBR
         let mbr = unsafe { mem::transmute::<[u8; 512], MasterBootRecord>(sector_0_buf) };
-        dbg!("{:?}", &mbr);
 
         // check the signature
         if mbr.signature != 0xAA55 {
@@ -118,7 +117,8 @@ impl MasterBootRecord {
 
         // validate bootable field of partition entries
         for i in 0..mbr.partition_table.len() {
-            if !(mbr.partition_table[i].boot_indicator == 0x00 || mbr.partition_table[i].boot_indicator == 0x80) {
+            if !(mbr.partition_table[i].boot_indicator == 0x00
+                 || mbr.partition_table[i].boot_indicator == 0x80) {
                 return Err(Error::UnknownBootIndicator(i as u8));
             }
         }

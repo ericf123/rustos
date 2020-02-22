@@ -141,6 +141,7 @@ fn check_ebpb_size() {
 fn check_ebpb_signature() {
     let mut data = [0u8; 1024];
     data[510..512].copy_from_slice(&[0x55, 0xAA]);
+    data[66] = 0x29;
 
     let e = BiosParameterBlock::from(Cursor::new(&mut data[..]), 1).unwrap_err();
     expect_variant!(e, vfat::Error::BadSignature);
