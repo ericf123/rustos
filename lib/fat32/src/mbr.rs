@@ -71,7 +71,7 @@ impl fmt::Debug for MasterBootRecord {
                    {:?}\n\
                    -----PARTITION 4-----\n\
                    {:?}\n\
-                   SIGNATURE: {:?}", 
+                   SIGNATURE: {:#x}", 
                 &{self.disk_id}, &{&self.partition_table[0]}, &{&self.partition_table[1]},
                 &{&self.partition_table[2]}, &{&self.partition_table[3]}, &{self.signature})
     }

@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 use core::fmt;
 use hashbrown::HashMap;
 use shim::io;
+use shim::ioerr;
 
 use crate::traits::BlockDevice;
 
@@ -87,7 +88,15 @@ impl CachedPartition {
     ///
     /// Returns an error if there is an error reading the sector from the disk.
     pub fn get_mut(&mut self, sector: u64) -> io::Result<&mut [u8]> {
-        unimplemented!("CachedPartition::get_mut()")
+        self.insert_if_not_exists(sector)?;
+
+        let entry = match self.cache.get_mut(&sector) {
+            Some(e) => e,
+            None => return ioerr!(NotFound, "sector not found in cache in get_mut (this should never happen)")
+        };
+        entry.dirty = true;
+
+        Ok(&mut entry.data)
     }
 
     /// Returns a reference to the cached sector `sector`. If the sector is not
@@ -97,7 +106,40 @@ impl CachedPartition {
     ///
     /// Returns an error if there is an error reading the sector from the disk.
     pub fn get(&mut self, sector: u64) -> io::Result<&[u8]> {
-        unimplemented!("CachedPartition::get()")
+        self.insert_if_not_exists(sector)?;
+
+        let entry = match self.cache.get(&sector) {
+            Some(e) => e,
+            None => return ioerr!(NotFound, "sector not found in cache in get_mut (this should never happen)")
+        };
+
+        Ok(&entry.data)
+    }
+
+    /// Reads a logical sectory from device and inserts it into the cache if 
+    /// the sector is not already in the cache.
+    fn insert_if_not_exists(&mut self, sector: u64) -> io::Result<()> {
+        match self.virtual_to_physical(sector) {
+            Some(physical_sector) => {
+                if !self.cache.contains_key(&sector) {
+                    // create a buf to hold virtual sector
+                    //let buf = Box::new(&[0u8; self.sector_size()]);
+                    let mut buf_vec: Vec<u8> = Vec::new();
+
+                    // read the physical sectors that map to the requested virtual sector
+                    for i in 0..self.factor() {
+                        let phys_start_idx = (i * self.device.sector_size()) as usize;
+                        let phys_end_idx = ((i + 1) * self.device.sector_size()) as usize;
+                        self.device.read_sector(physical_sector, &mut (&mut buf_vec)[phys_start_idx..phys_end_idx])?;
+                    }
+
+                    // insert virtual sector in to cache
+                    self.cache.insert(sector, CacheEntry { dirty: false, data: buf_vec });
+                }             
+                return Ok(());
+            },
+            None => return ioerr!(NotFound, "virtual sector number out of range")
+        };
     }
 }
 
@@ -105,15 +147,36 @@ impl CachedPartition {
 // `write_sector` methods should only read/write from/to cached sectors.
 impl BlockDevice for CachedPartition {
     fn sector_size(&self) -> u64 {
-        unimplemented!()
+        self.partition.sector_size
     }
 
     fn read_sector(&mut self, sector: u64, buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!()
+        match self.get(sector) {
+            Ok(read_buf) => {
+                if buf.len() >= read_buf.len() {
+                    // clone from slice panics if they aren't the same length
+                    buf[..read_buf.len()].clone_from_slice(read_buf);
+                    return Ok(read_buf.len());
+                } else {
+                    return ioerr!(UnexpectedEof, "destination buffer too small when reading from cached partition")
+                }
+            },
+            Err(err) => return Err(err)
+        };
     }
 
     fn write_sector(&mut self, sector: u64, buf: &[u8]) -> io::Result<usize> {
-        unimplemented!()
+        match self.get_mut(sector) {
+            Ok(write_buf) => {
+                if write_buf.len() >= buf.len() {
+                    write_buf[..buf.len()].clone_from_slice(buf);
+                    return Ok(buf.len());
+                } else {
+                    return ioerr!(UnexpectedEof, "destination buffer too small when writing to cached partition")
+                }
+            },
+            Err(err) => return Err(err)
+        };
     }
 }
 

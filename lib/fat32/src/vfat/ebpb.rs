@@ -1,5 +1,6 @@
 use core::fmt;
 use core::mem;
+use core::str;
 use shim::const_assert_size;
 
 use crate::traits::BlockDevice;
@@ -59,7 +60,6 @@ impl BiosParameterBlock {
         // transmute the buffer into an EBPB
         let mut ebpb = unsafe { mem::transmute::<[u8; 512], BiosParameterBlock>(ebpb_buf) };
         
-        println!("{:?}", ebpb);
         // validate signatures
         if !(ebpb.ebpb_signature == 0x28 || ebpb.ebpb_signature == 0x29)
              || ebpb.boot_signature != 0xAA55 {
@@ -106,6 +106,6 @@ impl fmt::Debug for BiosParameterBlock {
                    &{self.sectors_per_track}, &{self.num_heads}, &{self.num_hidden_sectors}, 
                    &{self.flags}, &{self.fat_version}, &{self.root_cluster}, &{self.fs_info_sector}, 
                    &{self.backup_boot_sector}, &{self.drive_num}, &{self.ebpb_signature}, &{self.volume_id},
-                   &{self.volume_label}, &{self.system_id}, &{self.boot_signature})
+                   str::from_utf8(&{self.volume_label}), str::from_utf8(&{self.system_id}), &{self.boot_signature})
     }
 }
