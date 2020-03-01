@@ -25,7 +25,7 @@ pub struct Partition {
 pub struct CachedPartition {
     device: Box<dyn BlockDevice>,
     cache: HashMap<u64, CacheEntry>,
-    partition: Partition,
+    pub partition: Partition,
 }
 
 impl CachedPartition {
@@ -67,6 +67,8 @@ impl CachedPartition {
     /// Maps a user's request for a sector `virt` to the physical sector.
     /// Returns `None` if the virtual sector number is out of range.
     fn virtual_to_physical(&self, virt: u64) -> Option<u64> {
+        println!("virt sector {}", virt);
+        println!("num sectors {}", self.partition.num_sectors);
         if virt >= self.partition.num_sectors {
             return None;
         }
@@ -116,21 +118,22 @@ impl CachedPartition {
         Ok(&entry.data)
     }
 
-    /// Reads a logical sectory from device and inserts it into the cache if 
+    /// Reads a logical sector from device and inserts it into the cache if 
     /// the sector is not already in the cache.
     fn insert_if_not_exists(&mut self, sector: u64) -> io::Result<()> {
         match self.virtual_to_physical(sector) {
             Some(physical_sector) => {
                 if !self.cache.contains_key(&sector) {
                     // create a buf to hold virtual sector
-                    //let buf = Box::new(&[0u8; self.sector_size()]);
                     let mut buf_vec: Vec<u8> = Vec::new();
 
                     // read the physical sectors that map to the requested virtual sector
                     for i in 0..self.factor() {
                         let phys_start_idx = (i * self.device.sector_size()) as usize;
-                        let phys_end_idx = ((i + 1) * self.device.sector_size()) as usize;
-                        self.device.read_sector(physical_sector, &mut (&mut buf_vec)[phys_start_idx..phys_end_idx])?;
+                        let phys_end_idx = phys_start_idx + self.device.sector_size() as usize;
+                        buf_vec.resize(buf_vec.len() + self.device.sector_size() as usize, 0);
+                        //self.device.read_sector(physical_sector, &mut (&mut buf_vec)[phys_start_idx..phys_end_idx-1])?;
+                        self.device.read_sector(physical_sector, &mut buf_vec[phys_start_idx..phys_end_idx])?;
                     }
 
                     // insert virtual sector in to cache
@@ -151,8 +154,10 @@ impl BlockDevice for CachedPartition {
     }
 
     fn read_sector(&mut self, sector: u64, buf: &mut [u8]) -> io::Result<usize> {
+        println!("dest buf: {}", buf.len());
         match self.get(sector) {
             Ok(read_buf) => {
+                println!("read buf: {}", read_buf.len());
                 if buf.len() >= read_buf.len() {
                     // clone from slice panics if they aren't the same length
                     buf[..read_buf.len()].clone_from_slice(read_buf);
@@ -169,6 +174,7 @@ impl BlockDevice for CachedPartition {
         match self.get_mut(sector) {
             Ok(write_buf) => {
                 if write_buf.len() >= buf.len() {
+                    // clone from slice panics if they aren't the same length
                     write_buf[..buf.len()].clone_from_slice(buf);
                     return Ok(buf.len());
                 } else {
