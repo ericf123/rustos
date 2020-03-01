@@ -17,11 +17,17 @@ impl<HANDLE: VFatHandle> traits::Entry for Entry<HANDLE> {
     type Metadata = Metadata;
 
     fn name(&self) -> &str {
-        &self.metadata().filename 
+        match self {
+            Entry::File(f) => &f.name,
+            Entry::Dir(d) => &d.name
+        }
     }
 
     fn metadata(&self) -> &Self::Metadata {
-        self.metadata()
+        match self {
+            Entry::File(f) => &f.metadata,
+            Entry::Dir(d) => &d.metadata
+        }
     }
 
     fn as_file(&self) -> Option<&File<HANDLE>> {

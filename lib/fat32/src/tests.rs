@@ -223,7 +223,6 @@ fn hash_entry<T: Entry>(hash: &mut String, entry: &T) -> ::std::fmt::Result {
 
 fn hash_dir<T: Dir>(hash: &mut String, dir: T) -> Result<Vec<T::Entry>, ::std::fmt::Error> {
     let mut entries: Vec<_> = dir.entries().expect("entries interator").collect();
-
     entries.sort_by(|a, b| a.name().cmp(b.name()));
     for (i, entry) in entries.iter().enumerate() {
         if i != 0 {
@@ -265,7 +264,6 @@ fn hash_dir_recursive<P: AsRef<Path>>(
 
     let path = path.as_ref();
     let dir = vfat.open_dir(path).expect("directory");
-
     write!(hash, "{}\n", path.display())?;
     let entries = hash_dir(hash, dir)?;
     if entries.iter().any(|e| e.is_dir()) {

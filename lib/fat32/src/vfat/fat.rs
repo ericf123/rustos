@@ -19,6 +19,7 @@ pub enum Status {
     Eoc(u32),
 }
 
+#[derive(Clone)]
 #[repr(C, packed)]
 pub struct FatEntry(pub u32);
 

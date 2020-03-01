@@ -42,11 +42,11 @@ pub struct Metadata {
 
 impl traits::Timestamp for Timestamp {
     fn year(&self) -> usize {
-        ((self.date.0 >> 8) + 1980) as usize
+        ((self.date.0 >> 9) & 0x7F) as usize + 1980
     }
 
     fn month(&self) -> u8 {
-        ((self.date.0 & 0x01E0) >> 4) as u8
+        ((self.date.0 >> 5) & 0xF) as u8
     }
 
     fn day(&self) -> u8 {
@@ -54,15 +54,15 @@ impl traits::Timestamp for Timestamp {
     }
 
     fn hour(&self) -> u8 {
-        (self.time.0 >> 10) as u8
+        ((self.time.0 >> 11) & 0x1F) as u8
     }
 
     fn minute(&self) -> u8 {
-        ((self.time.0 & 0x0F10) >> 4) as u8
+        ((self.time.0 >> 5) & 0x3F) as u8
     }
 
     fn second(&self) -> u8 {
-        ((self.time.0 & 0x1F) * 2) as u8
+        (self.time.0 & 0x1F) as u8 * 2
     }
 }
 
@@ -72,12 +72,12 @@ impl traits::Metadata for Metadata {
 
     /// Whether the associated entry is read only.
     fn read_only(&self) -> bool {
-        self.attributes.0 == 0x01
+        (self.attributes.0 & 0x01) != 0
     }
 
     /// Whether the entry should be "hidden" from directory traversals.
     fn hidden(&self) -> bool {
-        self.attributes.0 == 0x02
+        (self.attributes.0 & 0x02) != 0
     }
 
     /// The timestamp when the entry was created.

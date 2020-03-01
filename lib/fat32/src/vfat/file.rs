@@ -4,7 +4,7 @@ use shim::io::{self, SeekFrom};
 use shim::ioerr;
 
 use crate::traits;
-use crate::vfat::{Cluster, Metadata, VFatHandle, VFat};
+use crate::vfat::{Cluster, Metadata, VFatHandle, VFat, Status, FatEntry};
 use crate::vfat;
 
 use core::cmp::min;
@@ -15,7 +15,10 @@ pub struct File<HANDLE: VFatHandle> {
     pub metadata: Metadata,
     pub current_offset: u32,
     pub start_cluster: Cluster,
-    pub name: String
+    pub name: String,
+    pub size: u32,
+    pub current_cluster: Option<Cluster>,
+    pub bytes_per_cluster: u32
 }
 
 // FIXME: Implement `traits::File` (and its supertraits) for `File`.
@@ -27,7 +30,7 @@ impl<HANDLE: VFatHandle> traits::File for File<HANDLE> {
 
     /// Returns the size of the file in bytes.
     fn size(&self) -> u64 {
-        self.metadata.size as u64
+        self.size as u64
     }
 }
 
@@ -42,18 +45,46 @@ impl<HANDLE: VFatHandle> io::Write for File<HANDLE>  {
 
 impl<HANDLE:VFatHandle> io::Read for File<HANDLE> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.size() == 0 {
+            return Ok(0);
+        }
         use traits::File;
-        let read_size = min(buf.len(), (self.size() - self.current_offset as u64) as usize);
-        let bytes_read = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<usize> {
-            println!("read {}", read_size);
-            println!("buf len {}", buf.len());
-            let mut buf_vec: Vec<u8> = Vec::new();
-            let read = vfat.read_chain_from_offset(self.start_cluster, self.current_offset as usize, &mut buf_vec)?;
-            buf[..read_size].clone_from_slice(&buf_vec);
-            Ok(read)
-        })?;
+        use io::Seek;
 
-        Ok(bytes_read)
+        let read_size = min(buf.len(), (self.size() - self.current_offset as u64) as usize);
+        let mut cluster_offset = (self.current_offset % self.bytes_per_cluster) as usize;
+        let mut remaining = read_size;
+        let mut current_cluster = self.current_cluster;
+        let mut buf_offset = 0;
+
+        while remaining > 0 {
+            let cluster_read_size = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<usize> {
+                vfat.read_cluster(current_cluster.unwrap(), cluster_offset, &mut buf[buf_offset..read_size])
+            })?;
+
+            if cluster_read_size == self.bytes_per_cluster as usize - cluster_offset {
+                let entry = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<FatEntry> {
+                    Ok(((*vfat.fat_entry(current_cluster.unwrap())?).clone()))
+                })?;
+
+                match entry.status() {
+                    Status::Eoc(_) => current_cluster = None,
+                    Status::Data(next) => {
+                        current_cluster = Some(next);
+                    },
+                    _ => return ioerr!(InvalidData, "invalid cluster chain")
+
+                }
+            }
+            buf_offset += cluster_read_size;
+            remaining -= cluster_read_size;
+            cluster_offset = 0;
+        }
+
+        self.current_offset += read_size as u32;
+        self.current_cluster = current_cluster;
+
+        Ok(read_size)
     }
 }
 
@@ -73,37 +104,30 @@ impl<HANDLE: VFatHandle> io::Seek for File<HANDLE> {
     /// in an `InvalidInput` error.
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         use traits::File;
-        self.current_offset = match pos {
-            SeekFrom::Start(off) => {
-                if off > self.size() {
-                    return ioerr!(InvalidInput, "Attempted to seek past end of file");
-                }
-                off as u32
-            },
-            SeekFrom::End(off) => {
-                if self.size() as i64 + off  < 0 {
-                    return ioerr!(InvalidInput, "Attempted to seek past beginning of file");
-                }
-
-                if off > 0 {
-                    return ioerr!(InvalidInput, "Attempted to seek past end of file");
-                }
-
-                (self.size() as i64 + off) as u32
-            },
-            SeekFrom::Current(off) => {
-                if self.current_offset as i64 + off < 0 {
-                    return ioerr!(InvalidInput, "Attempted to seek past beginning of file");
-                } 
-
-                if self.current_offset as i64 + off > self.size() as i64 {
-                    return ioerr!(InvalidInput, "Attempted to seek past end of file");
-                }
-
-                (self.current_offset as i64 + off) as u32
-            }
+        let new_offset = match pos {
+            SeekFrom::Start(off) => off as i64,
+            SeekFrom::Current(off) => self.current_offset as i64 + off,
+            SeekFrom::End(off) => self.size() as i64 + off
         };
         
-        Ok(self.current_offset as u64)
+        if new_offset as u64 > self.size() || new_offset < 0 {
+            return ioerr!(InvalidInput, "invalid seek");
+        } else {
+            let mut curr_cluster = self.start_cluster;
+            for i in 0..(new_offset as u32 / self.bytes_per_cluster) {
+                let entry = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<FatEntry> {
+                    Ok(((*vfat.fat_entry(curr_cluster)?).clone()))
+                })?;
+
+                match entry.status() {
+                    Status::Data(next) => curr_cluster = next,
+                    _ => ()
+                };
+            }
+
+            self.current_cluster = Some(curr_cluster);
+            self.current_offset = new_offset as u32;
+            return Ok(self.current_offset as u64);
+        }
     }
 }
