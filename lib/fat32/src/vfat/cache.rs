@@ -67,8 +67,8 @@ impl CachedPartition {
     /// Maps a user's request for a sector `virt` to the physical sector.
     /// Returns `None` if the virtual sector number is out of range.
     fn virtual_to_physical(&self, virt: u64) -> Option<u64> {
-        println!("virt sector {}", virt);
-        println!("num sectors {}", self.partition.num_sectors);
+        //println!("virt sector {}", virt);
+        //println!("num sectors {}", self.partition.num_sectors);
         if virt >= self.partition.num_sectors {
             return None;
         }
@@ -154,10 +154,8 @@ impl BlockDevice for CachedPartition {
     }
 
     fn read_sector(&mut self, sector: u64, buf: &mut [u8]) -> io::Result<usize> {
-        println!("dest buf: {}", buf.len());
         match self.get(sector) {
             Ok(read_buf) => {
-                println!("read buf: {}", read_buf.len());
                 if buf.len() >= read_buf.len() {
                     // clone from slice panics if they aren't the same length
                     buf[..read_buf.len()].clone_from_slice(read_buf);

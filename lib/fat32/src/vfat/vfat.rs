@@ -53,8 +53,8 @@ impl<HANDLE: VFatHandle> VFat<HANDLE> {
             sector_size: ebpb.bytes_per_sector as u64,
 
         });
-        let data_start_sector = cached_partition.partition.start + ebpb.num_reserved_sectors as u64 + (ebpb.num_fats as u32 * ebpb.sectors_per_fat) as u64;
         let fat_start_sector = cached_partition.partition.start + ebpb.num_reserved_sectors as u64;
+        let data_start_sector = fat_start_sector + (ebpb.num_fats as u32 * ebpb.sectors_per_fat) as u64;
         let vfat = VFat::<HANDLE> {
             phantom: PhantomData,
             device: cached_partition,
@@ -75,14 +75,15 @@ impl<HANDLE: VFatHandle> VFat<HANDLE> {
     pub fn read_cluster(&mut self, cluster: Cluster, offset: usize, buf: &mut [u8]) -> io::Result<usize> {
         let cluster_entry = self.fat_entry(cluster)?;
         match cluster_entry.status() {
-            Status::Data(_) => {
+            Status::Data(_) | Status::Eoc(_) => {
                 // TODO do without double buf?
-                let cluster_data_start_sector = self.data_start_sector + (cluster.0 as u64 * self.sectors_per_cluster as u64);
+                let cluster_data_start_sector = self.data_start_sector + ((cluster.0 - 2) as u64 * self.sectors_per_cluster as u64);
                 let mut cluster_data: Vec<u8> = Vec::new();
                 for i in 0..self.sectors_per_cluster {
-                    let start_idx = i as usize* self.bytes_per_sector as usize;
+                    let start_idx = i as usize * self.bytes_per_sector as usize;
                     let end_idx = start_idx + self.bytes_per_sector as usize;
                     let curr_sector = cluster_data_start_sector + i as u64;
+                    //println!("curr sector {}", curr_sector);
                     cluster_data.resize(cluster_data.len() + self.bytes_per_sector as usize, 0);
                     cluster_data[start_idx..end_idx].clone_from_slice(self.device.get_mut(curr_sector)?);
                 }
@@ -158,7 +159,7 @@ impl<HANDLE: VFatHandle> VFat<HANDLE> {
             }
 
             let curr_entry = self.fat_entry(curr_cluster)?;
-            println!("{} STATUS {:#?}", curr_cluster_num, curr_entry.status());
+            //println!("{} STATUS {:#?}", curr_cluster_num, curr_entry.status());
             match curr_entry.status() {
                 Status::Data(next) => {
                     if load_buf {
@@ -196,16 +197,16 @@ impl<HANDLE: VFatHandle> VFat<HANDLE> {
         let (sector, offset) = self.get_cluster_addr(cluster);
         let sector_data = unsafe { self.device.get(sector)?.cast::<FatEntry>() };
         // TODO check valid index?
-        Ok(&sector_data[offset])
+        Ok(&sector_data[offset / size_of::<FatEntry>()])
     }
         
     // converts cluster to a sector and an offset within that sector
     // inside the FAT
     fn get_cluster_addr(&self, cluster: Cluster) -> (u64, usize) {
         // fat entry is 32 bytes 
-        let entries_per_sector = self.bytes_per_sector / 32;
-        let sector = self.fat_start_sector + (cluster.0 / entries_per_sector as u32) as u64;
-        let offset = (cluster.0 % entries_per_sector as u32) * 32; 
+        //let entries_per_sector = self.bytes_per_sector / 32;
+        let sector = self.fat_start_sector + (cluster.0 * size_of::<FatEntry>() as u32 / self.bytes_per_sector as u32) as u64;
+        let offset = cluster.0 * size_of::<FatEntry>() as u32 % self.bytes_per_sector as u32; 
 
         (sector, offset as usize)
     }
