@@ -5,8 +5,6 @@ use shim::ioerr;
 
 use crate::traits;
 use crate::vfat::{Cluster, Metadata, VFatHandle, VFat, Status, FatEntry};
-use crate::vfat;
-
 use core::cmp::min;
 
 #[derive(Debug)]
@@ -49,7 +47,6 @@ impl<HANDLE:VFatHandle> io::Read for File<HANDLE> {
             return Ok(0);
         }
         use traits::File;
-        use io::Seek;
 
         let read_size = min(buf.len(), (self.size() - self.current_offset as u64) as usize);
         let mut cluster_offset = (self.current_offset % self.bytes_per_cluster) as usize;
@@ -64,7 +61,7 @@ impl<HANDLE:VFatHandle> io::Read for File<HANDLE> {
 
             if cluster_read_size == self.bytes_per_cluster as usize - cluster_offset {
                 let entry = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<FatEntry> {
-                    Ok(((*vfat.fat_entry(current_cluster.unwrap())?).clone()))
+                    Ok((*vfat.fat_entry(current_cluster.unwrap())?).clone())
                 })?;
 
                 match entry.status() {
@@ -109,14 +106,14 @@ impl<HANDLE: VFatHandle> io::Seek for File<HANDLE> {
             SeekFrom::Current(off) => self.current_offset as i64 + off,
             SeekFrom::End(off) => self.size() as i64 + off
         };
-        
+
         if new_offset as u64 > self.size() || new_offset < 0 {
             return ioerr!(InvalidInput, "invalid seek");
         } else {
             let mut curr_cluster = self.start_cluster;
-            for i in 0..(new_offset as u32 / self.bytes_per_cluster) {
+            for _i in 0..(new_offset as u32 / self.bytes_per_cluster) {
                 let entry = self.vfat.lock(|vfat: &mut VFat<HANDLE>| -> io::Result<FatEntry> {
-                    Ok(((*vfat.fat_entry(curr_cluster)?).clone()))
+                    Ok((*vfat.fat_entry(curr_cluster)?).clone())
                 })?;
 
                 match entry.status() {

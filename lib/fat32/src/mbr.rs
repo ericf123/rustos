@@ -1,7 +1,6 @@
 use core::fmt;
 use shim::const_assert_size;
 use shim::io;
-use core::slice;
 use core::mem;
 
 use crate::traits::BlockDevice;

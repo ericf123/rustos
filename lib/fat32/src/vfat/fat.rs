@@ -1,8 +1,6 @@
 use crate::vfat::*;
 use core::fmt;
 
-use self::Status::*;
-
 #[derive(Debug, PartialEq)]
 pub enum Status {
     /// The FAT entry corresponds to an unused (free) cluster.
@@ -19,7 +17,7 @@ pub enum Status {
     Eoc(u32),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(C, packed)]
 pub struct FatEntry(pub u32);
 

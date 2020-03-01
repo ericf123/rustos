@@ -5,17 +5,11 @@ use shim::const_assert_size;
 use shim::ffi::OsStr;
 use shim::io;
 use shim::ioerr;
-use shim::newioerr;
-use core::marker::PhantomData;
-use core::mem::size_of;
 
 use crate::traits;
 use crate::util::VecExt;
 use crate::vfat::{Attributes, Date, Metadata, Time, Timestamp};
 use crate::vfat::{Cluster, Entry, File, VFatHandle, VFat};
-use crate::traits::Dummy;
-
-//use core::str::{from_utf8, from_utf16};
 
 #[derive(Debug)]
 pub struct Dir<HANDLE: VFatHandle> {
@@ -78,12 +72,6 @@ pub union VFatDirEntry {
     long_filename: VFatLfnDirEntry,
 }
 
-/*impl fmt::Debug for VFatDirEntry {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), Error> {
-        Ok(())
-    }
-}*/
-
 impl<HANDLE: VFatHandle> Dir<HANDLE> {
     /// Finds the entry named `name` in `self` and returns it. Comparison is
     /// case-insensitive.
@@ -131,21 +119,6 @@ impl<HANDLE: VFatHandle> traits::Dir for Dir<HANDLE> {
             Ok(vfat.bytes_per_sector as u32 * vfat.sectors_per_cluster as u32)
         })?;
 
-        /*let num_entries = raw_data.len() / size_of::<VFatDirEntry>();
-        let mut entries = vec![
-            VFatDirEntry {
-                unknown: VFatUnknownDirEntry::default(),
-            };
-            num_entries
-        ];
-        unsafe {
-            raw_data.as_ptr().copy_to(
-                entries.as_mut_ptr() as *mut u8,
-                num_entries * size_of::<VFatDirEntry>(),
-            );
-        }*/
-
-
         Ok(DirIterator {
             data: unsafe { raw_data.cast() },
             curr_idx: 0,
@@ -165,91 +138,6 @@ pub struct DirIterator<HANDLE: VFatHandle>{
 
 impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
     type Item = Entry<HANDLE>;
-
-    /*fn next(&mut self) -> Option<Self::Item> {
-        let mut long_file_name = [0u16; 260];
-        while self.current_index < self.data.len() {
-            let current_entry: &VFatDirEntry = &self.data[self.current_index];
-            let unknown_entry = unsafe { current_entry.unknown };
-            if unknown_entry.status == 0x00 {
-                // End of FAT
-                return None;
-            } else if unknown_entry.status == 0xE5 {
-                // Deleted entry
-                self.current_index += 1;
-                continue;
-            }
-
-            // Normal entry,
-            self.current_index += 1;
-            if unknown_entry.attributes.lfn() {
-                let lfn_entry = unsafe { current_entry.long_filename };
-                let lfn_sequence_num = (lfn_entry.sequence_number & 0x1F) as usize - 1;
-
-                if lfn_sequence_num <= 19 {
-                    long_file_name[lfn_sequence_num * 13..lfn_sequence_num * 13 + 5]
-                        .copy_from_slice(&lfn_entry.name_characters);
-                    long_file_name[lfn_sequence_num * 13 + 5..lfn_sequence_num * 13 + 11]
-                        .copy_from_slice(&lfn_entry.name_characters_2);
-                    long_file_name[lfn_sequence_num * 13 + 11..lfn_sequence_num * 13 + 13]
-                        .copy_from_slice(&lfn_entry.name_characters_3);
-                }
-            } else {
-                let regular_entry = unsafe { current_entry.regular };
-                let mut short_file_name = regular_entry.short_file_name;
-                if short_file_name[0] == 0x05 {
-                    // 0x05 is used for real 0xE5 as first byte
-                    short_file_name[0] = 0xE5;
-                }
-                let name = str::from_utf8(&short_file_name).unwrap().trim_end();
-                let ext = str::from_utf8(&regular_entry.short_file_extension)
-                    .unwrap()
-                    .trim_end();
-                let mut short_name = String::from(name);
-                if !ext.is_empty() {
-                    short_name.push_str(".");
-                    short_name.push_str(ext);
-                }
-                let mut nul_byte_index = None;
-                for (i, byte) in long_file_name.iter().enumerate() {
-                    if *byte == 0 {
-                        nul_byte_index = Some(i);
-                        break;
-                    }
-                }
-                let long_name = String::from_utf16(if let Some(len) = nul_byte_index {
-                    &long_file_name[0..len]
-                } else {
-                    &long_file_name
-                })
-                .unwrap();
-                if regular_entry.metadata.attributes.directory() {
-                    return Some(Entry::Dir(Dir {
-                        cluster: Cluster::from(regular_entry.metadata.first_cluster()),
-                        fs: self.fs.clone(),
-                        short_name,
-                        long_name,
-                        metadata: regular_entry.metadata,
-                    }));
-                } else {
-                    return Some(Entry::File(File {
-                        cluster: Cluster::from(regular_entry.metadata.first_cluster()),
-                        fs: self.fs.clone(),
-                        short_name,
-                        long_name,
-                        metadata: regular_entry.metadata,
-                        file_size: regular_entry.file_size,
-                        current_offset: 0,
-                        current_cluster: Some(Cluster::from(
-                            regular_entry.metadata.first_cluster(),
-                        )),
-                        bytes_per_cluster: self.bytes_per_cluster,
-                    }));
-                }
-            }
-        }
-        None
-    }*/
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut lfn = [0u16; 260];
@@ -283,11 +171,6 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
                     }
                 }
 
-                /*let mut start_idx = 0;
-                if lfn_entry.seq_num & (1 << 5) != 0 {
-                    start_idx = lfn_entry.seq_num;
-                }*/
-                //println!("{}", String::from_utf16(&name_chars).unwrap());
                 let start_idx = (((lfn_entry.seq_num & 0x1F) - 1) as usize) * 13;
                 // copy name chars from this entry into lfn
                 lfn[start_idx..=start_idx + end_name_chars].clone_from_slice(&name_chars[..=end_name_chars]);
@@ -296,10 +179,8 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
             } else {
                 // regular entry
                 let regular_entry = unsafe { curr_entry.regular };
-                //println!("{:#?}", regular_entry);
                 let name = match has_lfn {
                     true => {
-                        //let real_lfn = lfn.iter().take_while(|c| **c != 0).as_slice();
                         let mut last = 0; 
                         for i in 0..lfn.len() {
                             if lfn[i] != 0 {
@@ -313,7 +194,7 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
                     false => { 
                         let filename = core::str::from_utf8(&regular_entry.filename).unwrap().trim_end();
                         let extension =  core::str::from_utf8(&regular_entry.extension).unwrap().trim_end();
-                        let mut final_;
+                        let final_;
                         if extension.len() > 0 {
                             final_ = format!("{}.{}", filename, extension)
                         } else {
@@ -323,12 +204,6 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
                         final_
                     }
                 };
-
-
-                /*let name = match has_lfn {
-                    true => String::from(String::from_utf16(&lfn).unwrap().trim_end()),
-                    false => unsafe { String::from(core::str::from_utf8_unchecked(&regular_entry.filename).trim_end()) }
-                };*/
 
                 let metadata = Metadata {
                     filename: name.clone(),
@@ -340,7 +215,7 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
                     size: regular_entry.size,
                     start_cluster: Cluster((regular_entry.cluster_high as u32) << 16 | regular_entry.cluster_low as u32)
                 };
-                //println!("{}", name);
+
                 if (regular_entry.attributes.0 & 0x10) != 0 {
                     return Some(
                         Entry::Dir(Dir {

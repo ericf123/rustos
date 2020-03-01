@@ -67,8 +67,6 @@ impl CachedPartition {
     /// Maps a user's request for a sector `virt` to the physical sector.
     /// Returns `None` if the virtual sector number is out of range.
     fn virtual_to_physical(&self, virt: u64) -> Option<u64> {
-        //println!("virt sector {}", virt);
-        //println!("num sectors {}", self.partition.num_sectors);
         let new_virt = virt - self.partition.start;
         if new_virt >= self.partition.num_sectors {
             return None;
@@ -133,7 +131,6 @@ impl CachedPartition {
                         let phys_start_idx = (i * self.device.sector_size()) as usize;
                         let phys_end_idx = phys_start_idx + self.device.sector_size() as usize;
                         buf_vec.resize(buf_vec.len() + self.device.sector_size() as usize, 0);
-                        //self.device.read_sector(physical_sector, &mut (&mut buf_vec)[phys_start_idx..phys_end_idx-1])?;
                         self.device.read_sector(physical_sector + i, &mut buf_vec[phys_start_idx..phys_end_idx])?;
                     }
 
