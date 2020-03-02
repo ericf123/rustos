@@ -140,6 +140,8 @@ impl<HANDLE: VFatHandle> Iterator for DirIterator<HANDLE> {
     type Item = Entry<HANDLE>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        use crate::alloc::string::ToString;
+        
         let mut lfn = [0u16; 260];
         let mut has_lfn = false;
         while self.curr_idx < self.data.len() {

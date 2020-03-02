@@ -3,6 +3,7 @@ use shim::io;
 use shim::ioerr;
 
 use fat32::traits::BlockDevice;
+use pi::timer;
 
 extern "C" {
     /// A global representing the last SD controller error that occured.
@@ -31,6 +32,10 @@ extern "C" {
 
 // FIXME: Define a `#[no_mangle]` `wait_micros` function for use by `libsd`.
 // The `wait_micros` C signature is: `void wait_micros(unsigned int);`
+#[no_mangle]
+fn wait_micros(micros: u32) {
+    timer::spin_sleep(Duration::from_micros(micros.into()));
+}
 
 /// A handle to an SD card controller.
 #[derive(Debug)]

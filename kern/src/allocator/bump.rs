@@ -44,7 +44,7 @@ impl LocalAlloc for Allocator {
     /// size or alignment constraints.
     unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
         let aligned = align_up(self.current, layout.align());
-        
+        if  aligned + layout.size() <= self.end {
             self.current = aligned.saturating_add(layout.size());
             unsafe { return aligned as *mut u8; } 
         } else {

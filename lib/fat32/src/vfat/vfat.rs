@@ -162,6 +162,7 @@ impl<'a, HANDLE: VFatHandle> FileSystem for &'a HANDLE {
 
     fn open<P: AsRef<Path>>(self, path: P) -> io::Result<Self::Entry> {
         use crate::traits::Entry;
+        use crate::alloc::string::ToString;
         let components = path.as_ref().components();
         let mut dir_entries: Vec<crate::vfat::Entry<HANDLE>> = Vec::new();
 
@@ -175,7 +176,7 @@ impl<'a, HANDLE: VFatHandle> FileSystem for &'a HANDLE {
                         start_cluster: self.lock(|vfat: &mut VFat<HANDLE>| -> Cluster {
                             vfat.rootdir_cluster
                         }),
-                        name: "root".to_owned()
+                        name: "root".to_string()
                     }));
                 }
                 Component::Normal(name) => {
