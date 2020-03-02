@@ -3,6 +3,7 @@ use alloc::string::String;
 use shim::io::{self, SeekFrom};
 use shim::ioerr;
 
+
 use crate::traits;
 use crate::vfat::{Cluster, Metadata, VFatHandle, VFat, Status, FatEntry};
 use core::cmp::min;

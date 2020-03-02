@@ -31,8 +31,8 @@ pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
 
 fn kmain() -> ! {
     unsafe {
-        //ALLOCATOR.initialize();
-        //FILESYSTEM.initialize();
+        ALLOCATOR.initialize();
+        FILESYSTEM.initialize();
     }
 
     kprintln!("Welcome to cs3210!");

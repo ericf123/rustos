@@ -57,10 +57,58 @@ impl FileSystem {
     ///
     /// Panics if the underlying disk or file sytem failed to initialize.
     pub unsafe fn initialize(&self) {
-        unimplemented!("FileSystem::initialize()")
+        let sd = Sd::new().unwrap();
+        *self.0.lock() = Some(VFat::<PiVFatHandle>::from(sd).unwrap());
     }
 }
 
-// FIXME: Implement `fat32::traits::FileSystem` for `&FileSystem`
-/*impl fat32::traits::FileSystem for &FileSystem {
-}*/
+impl fat32::traits::FileSystem for &FileSystem {
+    type File = File<PiVFatHandle>;
+    type Dir = Dir<PiVFatHandle>;
+    type Entry = Entry<PiVFatHandle>;
+
+    /// Opens the entry at `path`. `path` must be absolute.
+    ///
+    /// # Errors
+    ///
+    /// If `path` is not absolute, an error kind of `InvalidInput` is returned.
+    ///
+    /// If any component but the last in `path` does not refer to an existing
+    /// directory, an error kind of `InvalidInput` is returned.
+    ///
+    /// If there is no entry at `path`, an error kind of `NotFound` is returned.
+    ///
+    /// All other error values are implementation defined.
+    fn open<P: AsRef<Path>>(self, p: P) -> io::Result<Self::Entry> {
+        if !p.as_ref().is_absolute() {
+            return ioerr!(InvalidInput, "path must be absolute");
+        }
+        
+        self.0.lock().as_ref().unwrap().open(p)
+    }
+
+    /*
+    /// Opens the file at `path`. `path` must be absolute.
+    ///
+    /// # Errors
+    ///
+    /// In addition to the error conditions for `open()`, this method returns an
+    /// error kind of `Other` if the entry at `path` is not a regular file.
+    fn open_file<P: AsRef<Path>>(self, path: P) -> io::Result<Self::File> {
+        self.open(path)?
+            .into_file()
+            .ok_or(io::Error::new(io::ErrorKind::Other, "not a regular file"))
+    }
+
+    /// Opens the directory at `path`. `path` must be absolute.
+    ///
+    /// # Errors
+    ///
+    /// In addition to the error conditions for `open()`, this method returns an
+    /// error kind of `Other` if the entry at `path` is not a directory.
+    fn open_dir<P: AsRef<Path>>(self, path: P) -> io::Result<Self::Dir> {
+        self.open(path)?
+            .into_dir()
+            .ok_or(io::Error::new(io::ErrorKind::Other, "not a directory"))
+    }*/
+}

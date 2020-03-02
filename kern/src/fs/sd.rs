@@ -33,13 +33,13 @@ extern "C" {
 // FIXME: Define a `#[no_mangle]` `wait_micros` function for use by `libsd`.
 // The `wait_micros` C signature is: `void wait_micros(unsigned int);`
 #[no_mangle]
-fn wait_micros(micros: u32) {
-    timer::spin_sleep(Duration::from_micros(micros.into()));
+pub extern "C" fn wait_micros(micros: u32) {
+    timer::spin_sleep(Duration::from_micros((micros * 100).into()));
 }
 
 /// A handle to an SD card controller.
 #[derive(Debug)]
-pub struct Sd;
+pub struct Sd {}
 
 impl Sd {
     /// Initializes the SD card controller and returns a handle to it.
@@ -48,7 +48,13 @@ impl Sd {
     /// with atomic memory access, but we can't use it yet since we haven't
     /// written the memory management unit (MMU).
     pub unsafe fn new() -> Result<Sd, io::Error> {
-        unimplemented!("Sd::new()")
+        let err = sd_init();
+        match err {
+            0 => Ok(Sd {}),
+            -1 => ioerr!(TimedOut, "SD Card Initialization Timed Out (init)"),
+            -2 => ioerr!(BrokenPipe, "Error Sending Commands to SD Card (init)"),
+            _ => ioerr!(Other, "Unknown Error Occurred (init)")
+        }
     }
 }
 
@@ -66,7 +72,28 @@ impl BlockDevice for Sd {
     ///
     /// An error of kind `Other` is returned for all other errors.
     fn read_sector(&mut self, n: u64, buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!("Sd::read_sector()")
+        if n > 0x7FFFFFFF {
+            return ioerr!(InvalidInput, "n is too large");
+        }
+        if buf.len() < 512 {
+            return ioerr!(InvalidInput, "buf.len() must be at least 512");
+        }
+        let buf_ptr = buf.as_mut_ptr();
+        match unsafe { sd_readsector(n as i32, buf_ptr) } {
+            0 => {
+                // error occurred
+                unsafe {
+                    match sd_err {
+                        -1 => ioerr!(TimedOut, "SD Card Initialization Timed Out (read)"),
+                        -2 => ioerr!(BrokenPipe, "Error Sending Commands to SD Card (read)"),
+                        _ => ioerr!(BrokenPipe, "Error Sending Commands to SD Card (read)"),
+                    }
+                }
+            }
+            _ => { 
+                return Ok(n as usize);
+            }
+        }
     }
 
     fn write_sector(&mut self, _n: u64, _buf: &[u8]) -> io::Result<usize> {

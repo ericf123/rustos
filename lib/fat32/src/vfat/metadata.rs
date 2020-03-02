@@ -121,14 +121,13 @@ impl Metadata {
 impl fmt::Display for Timestamp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use traits::Timestamp;
-        write!(f, "{}/{}/{} {}:{}:{}", self.month(), self.day(), self.year(),
+        write!(f, "{:02}/{:02}/{:04} {:02}:{:02}:{:02}", self.month(), self.day(), self.year(),
                self.hour(), self.minute(), self.second())
     }
 }
 
 impl fmt::Display for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {} {} {}", self.drwh_str(), self.created_timestamp, 
-              self.accessed_date, self.modified_timestamp, self.filename)
+        write!(f, "{} {:10} {} {}", self.drwh_str(), self.size, self.modified_timestamp, self.filename)
     }
 }

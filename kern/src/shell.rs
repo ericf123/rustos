@@ -1,12 +1,13 @@
 use shim::io;
-use shim::path::{Path, PathBuf};
-
+use shim::path::{Path, PathBuf, Component};
+use alloc::vec::Vec;
 use stack_vec::StackVec;
 
 use pi::atags::Atags;
 
 use fat32::traits::FileSystem;
 use fat32::traits::{Dir, Entry};
+use crate::fs::PiVFatHandle;
 
 use crate::console::{kprint, kprintln, CONSOLE};
 use pi::gpio::Gpio;
@@ -14,6 +15,9 @@ use pi::timer;
 use core::time::Duration;
 use crate::ALLOCATOR;
 use crate::FILESYSTEM;
+use core::str;
+
+use fat32::vfat::File;
 
 const BOOTLOADER_START_ADDR: usize = 0x4000000;
 const BOOTLOADER_START: *mut u8 = BOOTLOADER_START_ADDR as *mut u8;
@@ -23,6 +27,26 @@ unsafe fn jump_to(addr: *mut u8) -> ! {
     loop {
         asm!("wfe" :::: "volatile")
     }
+}
+
+fn canonicalize(path: PathBuf) -> Result<PathBuf, ()> {
+    let mut new_path = PathBuf::new();
+
+    for comp in path.components() {
+        match comp {
+            Component::ParentDir => {
+                let res = new_path.pop();
+                if !res {
+                    return Err(());
+                }
+            },
+            Component::Normal(n) => new_path = new_path.join(n),
+            Component::RootDir => new_path = ["/"].iter().collect(),
+            _ => ()
+        };
+    }
+
+    Ok(new_path)
 }
 
 fn ldkern() -> ! {
@@ -43,6 +67,136 @@ fn blinkyboi() {
         kprint!("OFF\r");
         led.clear();
         timer::spin_sleep(Duration::from_millis(150));
+    }
+}
+
+fn ls<P: AsRef<Path>>(cwd: P, args: &mut StackVec<&str>) {
+    use fat32::traits::Metadata;
+    let mut dir_path: PathBuf; 
+    let mut display_hidden = false;
+    let mut path_arg = "";
+
+    while args.len() > 1 {
+        let tmp = args.pop().unwrap();
+        if tmp == "-a" {
+            display_hidden = true;
+        } else {
+            path_arg = tmp;
+        }
+    }
+    
+    
+    if path_arg != "" {
+        dir_path = cwd.as_ref().join(path_arg);
+    } else {
+        dir_path = cwd.as_ref().into();
+    }
+
+    dir_path = match canonicalize(dir_path.clone()) {
+        Ok(p) => p,
+        Err(_) => {
+            kprintln!("\ninvalid path: {}", &dir_path.to_str().unwrap());
+            return;
+        }
+    };
+
+    let dir = match FILESYSTEM.open_dir(&dir_path) {
+        Ok(d) => d,
+        Err(_) => {
+            kprintln!("\nno such file or directory: {}", &dir_path.to_str().unwrap());
+            return;
+        }
+    };
+
+    let entries = match dir.entries() {
+        Ok(e) => e,
+        Err(_) => {
+            kprintln!("\ncan't list entries in dir!");
+            return;
+        }
+    };
+
+    kprintln!();
+    for entry in entries {
+        if !entry.metadata().hidden() || display_hidden {
+            kprintln!("{}", entry.metadata());
+        }
+    }
+}
+
+fn cd(cwd: &mut PathBuf, args: StackVec<&str>) {
+    if args.len() > 2 {
+        kprintln!("\nusage: cd <dir>");
+    } else {
+        let mut path: PathBuf = [args.as_slice()[1]].iter().collect();
+        if !path.is_absolute() {
+            path = cwd.join(path);
+        }     
+
+        *cwd = match canonicalize(path) {
+            Ok(p) => match FILESYSTEM.open_dir(&p) {
+                Ok(_) => p,
+                Err(_) => {
+                    kprintln!("\nno such directory: {}", p.to_str().unwrap());
+                    cwd.clone()
+                }
+            },
+            Err(_) => {
+                kprintln!("\nunable to cd to {} (bad path)", args.as_slice()[1]);
+                cwd.clone()
+            }
+        };
+    }
+}
+
+fn pwd<P: AsRef<Path>>(wd: P) {
+    let print_me = match wd.as_ref().to_str() {
+        Some(s) => s,
+        None => "error printing working directory"
+    };
+    kprintln!("\n{}", print_me);
+}
+
+fn cat<P: AsRef<Path>>(cwd: P, args: StackVec<&str>) {
+    use io::Read;
+    if args.len() < 2 {
+        kprintln!("\nusage: cat <file1> ... <filen>");
+    } else {
+        let mut concatenated: Vec<u8> = Vec::new();
+        for arg in args.as_slice()[1..].iter() {
+            let mut raw_path: PathBuf = [arg].iter().collect(); 
+            if !raw_path.is_absolute() {
+                raw_path = cwd.as_ref().join(raw_path);
+            }
+
+            let abs_path = match canonicalize(raw_path) {
+                Ok(p) => p,
+                Err(_) => {
+                    kprintln!("\ninvalid arg: {}", arg);
+                    break;
+                }
+            };
+
+            let mut f: File<PiVFatHandle> = match FILESYSTEM.open_file(&abs_path) {
+                Ok(res) => res,
+                Err(_) => {
+                    kprintln!("\ncan't open file: {}", &abs_path.to_str().unwrap());
+                    break;
+                }
+            };
+
+
+            match f.read_to_end(&mut concatenated) {
+                Ok(_) => (),
+                Err(_) => {
+                    kprintln!("\nunable to read file: {}", f.name);
+                    break;
+                }
+            };
+        }
+
+        let concat_str = unsafe { str::from_utf8_unchecked(&concatenated) };
+        kprint!("\n{}", concat_str);
     }
 }
 
@@ -91,6 +245,7 @@ impl<'a> Command<'a> {
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns.
 pub fn shell(prefix: &str) -> ! {
+    let mut cwd: PathBuf = ["/"].iter().collect();
     // wait for user to be ready
     loop {
         kprint!("\r{}", prefix);
@@ -139,7 +294,7 @@ pub fn shell(prefix: &str) -> ! {
 
         let command_str = core::str::from_utf8(&command_buf[..count]).unwrap_or_default();
         match Command::parse(command_str, &mut parsed_buf) {
-            Ok(command) => {
+            Ok(mut command) => {
                 match command.path() {
                     "echo" => {
                         let mut first = true;
@@ -164,6 +319,24 @@ pub fn shell(prefix: &str) -> ! {
                     "memmap" => {
                         kprintln!("\n{:#?}", crate::allocator::memory_map().unwrap());
                     },
+                    "pwd" => pwd(&cwd),
+                    "ls" => ls(&cwd, &mut command.args),
+                    "cat" => cat(&cwd, command.args),
+                    "cd" => cd(&mut cwd, command.args),
+                    "files" => {
+                        use fat32::traits::Entry;
+                        use fat32::traits::FileSystem;
+                        use fat32::traits::Dir;
+
+                        let root_dir = match (&FILESYSTEM).open("/") {
+                            Ok(entry) => entry.into_dir().unwrap(),
+                            _ => continue
+                        };
+                        kprintln!("");
+                        for entry in root_dir.entries().unwrap() {
+                            kprintln!("{}", entry.name());
+                        }
+                    }
                     /*"test_string" => {
                         String::from("hello");
                     }*/
