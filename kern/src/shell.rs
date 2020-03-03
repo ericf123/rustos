@@ -76,13 +76,14 @@ fn ls<P: AsRef<Path>>(cwd: P, args: &mut StackVec<&str>) {
     let mut display_hidden = false;
     let mut path_arg = "";
 
-    while args.len() > 1 {
-        let tmp = args.pop().unwrap();
-        if tmp == "-a" {
-            display_hidden = true;
-        } else {
-            path_arg = tmp;
-        }
+    if args.as_slice()[1] == "-a" {
+        display_hidden = true;
+    } 
+
+    if display_hidden {
+        path_arg = args.as_slice()[2];
+    } else if args.len() > 1 {
+        path_arg = args.as_slice()[1];
     }
     
     
@@ -195,7 +196,10 @@ fn cat<P: AsRef<Path>>(cwd: P, args: StackVec<&str>) {
             };
         }
 
-        let concat_str = unsafe { str::from_utf8_unchecked(&concatenated) };
+        let concat_str = match str::from_utf8(&concatenated) {
+                Ok(s) => s,
+                Err(_) => "\none or more files contained invalid UTF-8"
+        };
         kprint!("\n{}", concat_str);
     }
 }
