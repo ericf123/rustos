@@ -1,0 +1,12 @@
+I chose size classes for powers of two, from 8 to 2^32 because this was the bin size suggested by the 
+assignment. 
+My allocator handles alignment by insuring that the pointer it returns is aligned based on the layout
+provided by the caller, and that the size is aligned to a minimum of 8 bytes, and is not smaller than 
+the size of the free block metadata. This is necessary to prevent invalid memory accesses on the Pi,
+which requires all access to be 8 byte aligned.
+My design has relatively little internal fragmentation, because it starts by looking in the bin
+that has the minimum possible size for that allocation, and then looking successively in the next
+smallest bin. There is a bit of external fragmentation because my allocator actually leaks small amounts 
+of memory because it does not join memory blocks when it frees them. This leads to external fragmentation 
+because allocated blocks that are smaller than the block that was pulled from the bin leak a small amount of 
+memory.

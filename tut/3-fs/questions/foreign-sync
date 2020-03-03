@@ -1,0 +1,4 @@
+The implementation is not thread safe because the sd_err code could change if the BlockDevice's read
+sector is called from a different thread before we check the error code in the original thread. We get
+around this by only ever having one way of referencing the Sd card, which is protected through the 
+mutex around our FileSystem.

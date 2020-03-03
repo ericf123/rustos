@@ -1,0 +1,5 @@
+Exposing only safe APIs lets increases the amount of safe code that we have overall, and makes sure
+that users consume our API in a safe way. This lets us guarantee that our code will not have memory 
+safety bugs, provided that the unsafe parts of our code (which should be very small) work correctly. 
+We can't provide similar guarantees in a language like C because consumers of our API could still do 
+unsafe operations and create memory safety issues that way.

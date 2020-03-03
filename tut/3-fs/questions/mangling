@@ -1,0 +1,6 @@
+Rust mangles names because it has namespaces that allow you to have two identifiers with the same name 
+as long as they are inside different namespaces. Mangling transforms these identifiers into unique ones
+based on information about the namespace they occupy. Since other languages, like C, do not have namespaces,
+this does not cause an issue for those languages and they do not have to mangle the name. For example, 
+if Rust didn't name mangle, methods in core::str and std::str would conflict with each other, which would
+cause problems because they might have different implementations with the same name.

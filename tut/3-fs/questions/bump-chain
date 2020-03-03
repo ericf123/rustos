@@ -1,0 +1,3 @@
+From the call to v.push(i), the vector will resize itself if necessary. If it needs to resize itself,
+it will create a layout that specifies the new size that it needs for its backing structure, and then it
+will call alloc with the layout that it just created.

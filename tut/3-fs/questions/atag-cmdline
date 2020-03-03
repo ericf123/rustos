@@ -1,0 +1,2 @@
+The purpose of the CMDLINE ATAG is to pass arguments from the bootloader to the kernel. 
+These arguments range from describing the hardware, to the type of the root filesystem, etc.

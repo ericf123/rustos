@@ -1,0 +1,5 @@
+The benefit of an intrusive Linked List is that it uses already allocated memory to keep track of 
+the elements in the list. This is convenient for a memory allocator because otherwise, we would need 
+some method of allocating the metadata for the Linked List, which would likely require dynamic memory. 
+This poses a problem because it would be difficult to use a structure that requires dynamic memory 
+allocation to manage dynamic memory allocation itself.

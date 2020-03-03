@@ -1,0 +1,5 @@
+Rust's strategy is advantageous for the caller because they can specify their desired memory alignment,
+and it is guaranteed to be correctly aligned, which is not the case with malloc. Rust's strategy 
+is also advantageous for the allocator because it means you can get away with not storing any information
+in allocated chunks because the caller must provide a layout, which includes the allocated chunk's size,
+in the dealloc request.

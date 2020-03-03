@@ -1,0 +1,3 @@
+libc requires these alignments to take advantage of spatial locality for caching. Since most caches
+will load data from spatially adjacent addresses, aligning to 8 or 16 bytes makes sure that the memory 
+that gets cached will also have been allocated to the caller.

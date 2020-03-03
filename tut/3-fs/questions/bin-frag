@@ -1,0 +1,5 @@
+I could improve the fragmentation by joining blocks with adjacent free blocks when they are freed. This
+would make it so that blocks in the free bins are as large as they can be, reducing internal fragmentation.
+Further, I could reduce fragmentation even more by selectively allocating memory from the global free pool
+that is exactly the correct size for the request when the difference between the size of the block it is taking
+from the free list is significantly large.

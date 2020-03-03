@@ -1,0 +1,4 @@
+Rust cannot insure that external code is safe because other languages do not have the same memory safety
+rules as Rust. This means that you can do operations that are considered unsafe in Rust inside the external
+code. Since the Rust compiler has no way of checking that the external code is safe, it must consider it 
+unsafe.
