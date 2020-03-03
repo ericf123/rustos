@@ -1,5 +1,6 @@
 use core::alloc::Layout;
 use core::ptr;
+use core::cmp::max;
 
 use crate::allocator::util::*;
 use crate::allocator::LocalAlloc;
@@ -16,7 +17,7 @@ impl Allocator {
     /// starting at address `start` and ending at address `end`.
     #[allow(dead_code)]
     pub fn new(start: usize, end: usize) -> Allocator {
-        Allocator { current: start, end: end }
+        Allocator { current: align_up(start, 8), end: align_down(end, 8)}
     }
 }
 
@@ -43,7 +44,7 @@ impl LocalAlloc for Allocator {
     /// or `layout` does not meet this allocator's
     /// size or alignment constraints.
     unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
-        let aligned = align_up(self.current, layout.align());
+        let aligned = align_up(self.current, max(layout.align(), 8));
         if  aligned + layout.size() <= self.end {
             self.current = aligned.saturating_add(layout.size());
             unsafe { return aligned as *mut u8; } 

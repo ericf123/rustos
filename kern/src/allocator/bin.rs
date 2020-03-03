@@ -1,6 +1,8 @@
 use core::alloc::Layout;
 use core::fmt;
 use core::ptr;
+use core::cmp::max;
+use core::mem;
 
 use crate::allocator::linked_list::LinkedList;
 use crate::allocator::util::*;
@@ -36,9 +38,9 @@ impl Allocator {
         let bins = [LinkedList::new(); 30];
         Allocator {
             bins,
-            start,
-            end,
-            free_pool_start: start
+            start: align_up(start, 8),
+            end: align_down(end, 8),
+            free_pool_start: align_up(start, 8)
         }
     }
 
@@ -61,7 +63,7 @@ impl Allocator {
         unimplemented!(); 
     }
 
-    fn debug_bins(&self) {
+    /*fn debug_bins(&self) {
         println!("-----bins-----");
         for i in 0..self.bins.len() {
             print!("{}: ", i);
@@ -70,7 +72,7 @@ impl Allocator {
             }
             println!();
         }
-    }
+    }*/
 }
 
 impl LocalAlloc for Allocator {
@@ -99,6 +101,7 @@ impl LocalAlloc for Allocator {
         let mut ret: Option<*mut u8> = None;
         let mut not_usable: LinkedList = LinkedList::new();
         let mut k = 0;
+        let size = max(align_up(mem::size_of::<FreeHeader>(), 8), align_up(layout.size(), 8));
         while ret == None {
             if k == 0 {
                 k = self.map_to_bin(layout.size());
@@ -111,10 +114,10 @@ impl LocalAlloc for Allocator {
                 Some(addr) => {
                     // we can fit in a previously freed block
                     let header = &*(addr as *mut FreeHeader);
-                    let aligned = align_up(addr as usize, layout.align());
+                    let aligned = align_up(addr as usize, max(layout.align(), 8));
 
                     // make sure we can still fit after alignment
-                    if aligned + layout.size() <= addr as usize + header.size {
+                    if aligned + size <= addr as usize + header.size {
                         Some(aligned as *mut u8)
                     } else {
                         // if we can't fit after alignment, keep looking
@@ -134,9 +137,9 @@ impl LocalAlloc for Allocator {
                         // we have no previously freed blocks that could work,
                         // allocate a completely new memory region from the 
                         // global free pool
-                        let aligned = align_up(self.free_pool_start, layout.align());
-                        if aligned + layout.size() <= self.end {
-                            self.free_pool_start = aligned + layout.size();
+                        let aligned = align_up(self.free_pool_start, max(layout.align(), 8));
+                        if aligned + size <= self.end {
+                            self.free_pool_start = align_up(aligned + size, 8);
                             Some(aligned as *mut u8)
                         } else {
                             Some(core::ptr::null_mut())
@@ -152,7 +155,9 @@ impl LocalAlloc for Allocator {
             let header = &*(addr as *const FreeHeader);
             self.bins[self.map_to_bin(header.size)].push(addr);
         }
-        
+        if ret.unwrap() as usize % 8 != 0 || ret.unwrap() as usize % layout.align() != 0 {
+            panic!("addr: {:#?} not aligned", ret.unwrap() as usize);
+        } 
         ret.unwrap()
     }
 
@@ -173,7 +178,7 @@ impl LocalAlloc for Allocator {
         let header_ptr = ptr as *mut FreeHeader;
         // we store 0 in _prev as a dummy, it will get overwritten 
         // when we push the item to the free list
-        *header_ptr = FreeHeader { _prev: 0, size: layout.size() };
+        *header_ptr = FreeHeader { _prev: 0, size: max(align_up(mem::size_of::<FreeHeader>(), 8), align_up(layout.size(), 8)) };
         self.bins[self.map_to_bin(layout.size())].push(ptr as *mut usize);
     }
 }

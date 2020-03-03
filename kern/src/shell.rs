@@ -1,6 +1,7 @@
 use shim::io;
 use shim::path::{Path, PathBuf, Component};
 use alloc::vec::Vec;
+use alloc::string::String;
 use stack_vec::StackVec;
 
 use pi::atags::Atags;
@@ -76,13 +77,15 @@ fn ls<P: AsRef<Path>>(cwd: P, args: &mut StackVec<&str>) {
     let mut display_hidden = false;
     let mut path_arg = "";
 
-    if args.as_slice()[1] == "-a" {
+    if args.len() > 1 && args.as_slice()[1] == "-a" {
         display_hidden = true;
     } 
 
     if display_hidden {
-        path_arg = args.as_slice()[2];
-    } else if args.len() > 1 {
+        if args.len() > 2 {
+            path_arg = args.as_slice()[2];
+        }
+    } else if args.len() > 2 {
         path_arg = args.as_slice()[1];
     }
     
@@ -177,7 +180,6 @@ fn cat<P: AsRef<Path>>(cwd: P, args: StackVec<&str>) {
                     break;
                 }
             };
-
             let mut f: File<PiVFatHandle> = match FILESYSTEM.open_file(&abs_path) {
                 Ok(res) => res,
                 Err(_) => {
@@ -300,6 +302,18 @@ pub fn shell(prefix: &str) -> ! {
         match Command::parse(command_str, &mut parsed_buf) {
             Ok(mut command) => {
                 match command.path() {
+                    "alloc" => {
+                        kprintln!("{:#?}", ALLOCATOR);
+                        let mut v = Vec::new();
+                        for i in 0..100000 {
+                            //kprintln!("{}", i);
+                            v.push(i);
+                        }
+                        for i in 133..150 {
+                            kprintln!("{}", v.as_slice()[i]);
+                        }
+                        kprintln!("alloc str");
+                    }
                     "echo" => {
                         let mut first = true;
                         kprintln!();
