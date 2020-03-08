@@ -1,0 +1,4 @@
+To set the PC to address A using the ret instruction, we simply have to store A into the link register 
+(lr or just write directly to x30). 
+To set the PC to address A using the eret instruction, we have to overwrite ELR_ELn with A, where n is the 
+exception level of the currently executing exception handler that we are returning from.

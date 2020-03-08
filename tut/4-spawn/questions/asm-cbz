@@ -1,0 +1,2 @@
+The cbz instruction compares a value to zero and conditionally branches if the value in the register
+is 0. This is useful for loops and other places where comparison to zero is combined with a branch.

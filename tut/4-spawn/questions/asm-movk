@@ -1,0 +1,3 @@
+mov  x0, #0xBCDE           // copy the immediate into x0
+movk x0, #0x000A, LSL #16  // copy the immediate into x0
+msr  ELR_EL1, x0           // move x0 into ELR_EL1

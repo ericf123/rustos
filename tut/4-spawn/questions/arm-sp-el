@@ -1,0 +1,2 @@
+Assuming s is the exception level of the process that caused the exception, we should set SPSR_ELx[0] = 1 
+(where x is the EL of the handler) using MSR, and we should also set the SP_ELs to B, and final call eret

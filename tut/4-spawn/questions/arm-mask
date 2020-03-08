@@ -1,0 +1,2 @@
+We can unmask IRQ interrupts by writing a value of 0b1101 to the DAIF field by 
+calling msr DAIFClr, 0b0010

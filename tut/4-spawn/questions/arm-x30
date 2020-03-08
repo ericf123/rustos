@@ -1,0 +1,2 @@
+Writing a value of 0xFFFF to register x30 is accessible through both w30 (aliases the lower 32 bits of r30),
+and the lr, the link register, which aliases x30.
