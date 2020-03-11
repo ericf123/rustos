@@ -9,6 +9,9 @@ use pi::interrupt::{Controller, Interrupt};
 
 use self::syndrome::Syndrome;
 use self::syscall::handle_syscall;
+use crate::console::kprintln;
+use crate::shell;
+use aarch64;
 
 #[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -41,5 +44,11 @@ pub struct Info {
 /// the trap frame for the exception.
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
-    unimplemented!("handle_exception");
+    match info {
+        Info { source: Source::CurrentSpElx, kind: Kind::Synchronous } => match Syndrome::from(esr) {
+            Syndrome::Brk(b) => loop { shell::shell("debug> "); },
+            _ => kprintln!("handler not implemented for this execption type"),
+        }
+        _ => kprintln!("handler not implemented for this execption type"),
+    }
 }

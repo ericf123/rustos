@@ -85,7 +85,7 @@ unsafe fn switch_to_el1() {
         SCTLR_EL1.set(SCTLR_EL1::RES1);
 
         // set up exception handlers
-        // FIXME: load `vectors` addr into appropriate register (guide: 10.4)
+        VBAR_EL1.set(&vectors as *const u64 as u64);
 
         // change execution level to EL1 (ref: C5.2.19)
         SPSR_EL2.set(
@@ -96,7 +96,8 @@ unsafe fn switch_to_el1() {
             | SPSR_EL2::A,
         );
 
-        // FIXME: eret to itself, expecting current_el() == 1 this time
+        ELR_EL2.set(switch_to_el1 as u64);
+        asm::eret();
     }
 }
 

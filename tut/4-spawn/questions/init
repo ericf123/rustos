@@ -1,0 +1,24 @@
+_start() function checks the CPU affinity and halts
+all cores other than core 0. If the core is core 0,
+it jumps into kinit.
+
+zeros_bss writes zeros to the kernel's bss segment
+because the memory in that region is uninitialized
+when the computer boots, and it could cause problems
+if we deref uninitialized memory.
+
+switch_to_el2 checks if the current EL is 3, and 
+if so changes to el2 by modifying the SPSR and 
+calling eret. It erets to itself, but shouldn't 
+execute anything the second time because the CPU
+should now be running in EL2.
+
+switch_to_el1 is the same thing as switch_to_el2,
+except that this time we are switching from 
+el2 to el1 instead of from el3 to el2. It also does
+some extra work to setup el1 stack pointer, exception
+vectors, enable floating point and SIMD, and make 
+sure we are executing in AArch64.
+
+finally, kinit() calls into kmain() after it has 
+completed its setup.

@@ -32,6 +32,7 @@ use fs::FileSystem;
 use process::GlobalScheduler;
 use traps::irq::Irq;
 use vm::VMManager;
+use aarch64;
 
 #[cfg_attr(not(test), global_allocator)]
 pub static ALLOCATOR: Allocator = Allocator::uninitialized();
@@ -43,9 +44,14 @@ pub static IRQ: Irq = Irq::uninitialized();
 fn kmain() -> ! {
     unsafe {
         ALLOCATOR.initialize();
-        FILESYSTEM.initialize();
-    }
+        //FILESYSTEM.initialize();
+    } 
 
+    loop {
+        kprintln!("CURRENT EL: {}", unsafe { aarch64::current_el() });
+        aarch64::brk!(2);
+    }
+    
     kprintln!("Welcome to cs3210!");
     shell::shell("> ");
 }

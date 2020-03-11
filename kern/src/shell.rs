@@ -250,7 +250,7 @@ impl<'a> Command<'a> {
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns.
-pub fn shell(prefix: &str) -> ! {
+pub fn shell(prefix: &str) {
     let mut cwd: PathBuf = ["/"].iter().collect();
     // wait for user to be ready
     loop {
@@ -358,6 +358,10 @@ pub fn shell(prefix: &str) -> ! {
                     /*"test_string" => {
                         String::from("hello");
                     }*/
+                    "exit" => {
+                        kprintln!();
+                        break;
+                    },
                     other => {
                         kprint!("\nunknown command: {}", other);
                     }
