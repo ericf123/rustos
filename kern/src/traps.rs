@@ -11,6 +11,9 @@ use self::syndrome::Syndrome;
 use self::syscall::handle_syscall;
 use crate::console::kprintln;
 use crate::shell;
+extern crate pi;
+use pi::timer;
+use core::time::Duration;
 use aarch64;
 
 #[repr(u16)]
@@ -46,9 +49,14 @@ pub struct Info {
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info {
         Info { source: Source::CurrentSpElx, kind: Kind::Synchronous } => match Syndrome::from(esr) {
-            Syndrome::Brk(b) => loop { shell::shell("debug> "); },
-            _ => kprintln!("handler not implemented for this execption type"),
+            Syndrome::Brk(b) => { 
+                //loop { kprintln!("elr: {:x}", tf.elr); }
+                //loop { kprintln!("tf: {:#?}", tf); timer::spin_sleep(Duration::from_millis(1000)); }
+                shell::shell("debug> "); 
+                tf.elr += 4;
+            },
+            syndrome @ _ => kprintln!("no handler: {:#?}", syndrome),
         }
-        _ => kprintln!("handler not implemented for this execption type"),
+        info @ _ => kprintln!("no handler: {:#?}", info),
     }
 }

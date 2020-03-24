@@ -47,11 +47,7 @@ fn kmain() -> ! {
         //FILESYSTEM.initialize();
     } 
 
-    loop {
-        kprintln!("CURRENT EL: {}", unsafe { aarch64::current_el() });
-        aarch64::brk!(2);
-    }
-    
-    kprintln!("Welcome to cs3210!");
-    shell::shell("> ");
+    aarch64::brk!(2);
+
+    loop { shell::shell("> "); } 
 }

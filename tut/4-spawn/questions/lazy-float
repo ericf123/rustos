@@ -1,0 +1,5 @@
+To lazily load the simd/fp registers, we could simply attempt to read/write to one of these registers in the 
+context save subroutine in order to cause an exception if they are disabled. Then, we make a special exception 
+handler that saves these registers. We wouldn't really have to modify the TrapFrame struct necessarily,
+but it would have some wasted space if the registers weren't used (though we would not waste time saving 
+the registers).
