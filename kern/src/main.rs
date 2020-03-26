@@ -41,13 +41,22 @@ pub static SCHEDULER: GlobalScheduler = GlobalScheduler::uninitialized();
 pub static VMM: VMManager = VMManager::uninitialized();
 pub static IRQ: Irq = Irq::uninitialized();
 
+pub extern "C" fn start_shell() {
+    unsafe { asm!("brk 1" :::: "volatile"); }
+    unsafe { asm!("brk 2" :::: "volatile"); }
+    shell::shell("user0> ");
+    unsafe { asm!("brk 3" :::: "volatile"); }
+    loop { shell::shell("user1> "); };
+}
+
 fn kmain() -> ! {
     unsafe {
         ALLOCATOR.initialize();
         //FILESYSTEM.initialize();
+        SCHEDULER.start()
     } 
 
-    aarch64::brk!(2);
+    //aarch64::brk!(2);
 
-    loop { shell::shell("> "); } 
+    //loop { shell::shell("> "); } 
 }

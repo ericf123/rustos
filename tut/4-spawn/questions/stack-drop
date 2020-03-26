@@ -1,0 +1,3 @@
+The Stack type implements the Drop trait, which in turn deallocates the memory that was originally allocated
+to the Stack when new() was invoked. The rust compiler will automatically insert the call to drop when it determines
+that the Stack's lifetime has ended.

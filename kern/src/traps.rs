@@ -48,10 +48,11 @@ pub struct Info {
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info {
-        Info { source: Source::CurrentSpElx, kind: Kind::Synchronous } => match Syndrome::from(esr) {
+        Info {source, kind: Kind::Synchronous } => match Syndrome::from(esr) {
             Syndrome::Brk(b) => { 
                 //loop { kprintln!("elr: {:x}", tf.elr); }
                 //loop { kprintln!("tf: {:#?}", tf); timer::spin_sleep(Duration::from_millis(1000)); }
+                kprintln!("source {:#?}", source);
                 shell::shell("debug> "); 
                 tf.elr += 4;
             },

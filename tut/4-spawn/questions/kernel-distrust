@@ -1,0 +1,4 @@
+Yes, processes have to trust the kernel. They need to trust that the kernel will service their system calls 
+correctly, for example. Even more, they need to trust that the kernel will schedule them appropriately, theoretically
+the kernel could just decide never to schedule a process, or the process could not get scheduled because of 
+a poor scheduler design, for example the convoy effect with a FCFS scheduler.

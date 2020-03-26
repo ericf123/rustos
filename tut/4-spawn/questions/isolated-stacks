@@ -1,0 +1,12 @@
+1. Two processes sharing a stack means that their local variables, some arguments, some return values,
+and saved context will overlap. Essentially, they are sharing the same memory region for saving different
+pieces of state.
+2. It's likely that these processes will crash fairly quickly because they will restore registers, read locals,
+and determine return addresses from a corrupted stack. One process will be modifying data that the other process
+expects to not be modified. For example, one process will finish a function call and attempt to read the return 
+address from the stack, but the other process overwrote the value, so the return address is likely invalid, 
+which would likely lead to an invalid memory access (outside the process's virtual memory/linked libraries), 
+which will lead the program to crash.
+3. Two processes could share a stack if they had some syncronization for their stack use. For example, they 
+could have a mutex that they lock and unlock to prevent one process from accessing/modifying the stack while
+the other process needs it. Further, it would require the processes not to use overlapping regions of the stack.

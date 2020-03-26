@@ -9,6 +9,7 @@ use crate::process::{Stack, State};
 use crate::traps::TrapFrame;
 use crate::vm::*;
 use kernel_api::{OsError, OsResult};
+use core::mem;
 
 /// Type alias for the type of a process ID.
 pub type Id = u64;
@@ -33,7 +34,18 @@ impl Process {
     /// If enough memory could not be allocated to start the process, returns
     /// `None`. Otherwise returns `Some` of the new `Process`.
     pub fn new() -> OsResult<Process> {
-        unimplemented!("Process::new()")
+        let stack = match Stack::new() {
+            Some(s) => s,
+            None => return Err(OsError::NoMemory)
+        };
+
+        Ok(
+            Process {
+                context: Box::new(TrapFrame::default()),
+                stack,
+                state: State::Ready
+            }
+        )
     }
 
     /// Load a program stored in the given path by calling `do_load()` method.

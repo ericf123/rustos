@@ -1,0 +1,5 @@
+We could lazily allocate Stack space by assigning allocating virtual memory for the stack space, but not 
+assigning this virtual memory a backing physical frame. This way, no physical resources are used until the 
+process needs to use its stack. It will simply page fault as soon as it needs to use the stack, at which point
+the kernel can allocate a physical frame to back the process's virtual memory, and the process can continue 
+executing normally.

@@ -1,0 +1,3 @@
+A process could increase its stack size by using the allocator's realloc() function. Assuming the realloc call
+executes successfully, the process would then have to change its stack pointer to point to the newly allocated 
+memory, as it could be in a different location than the original. 
