@@ -41,8 +41,28 @@ pub static SCHEDULER: GlobalScheduler = GlobalScheduler::uninitialized();
 pub static VMM: VMManager = VMManager::uninitialized();
 pub static IRQ: Irq = Irq::uninitialized();
 
+
+use core::time::Duration;
+extern crate pi;
+use pi::timer;
+
+
 pub extern "C" fn start_shell() {
     loop { shell::shell("user> "); } 
+}
+
+pub extern fn tp1() {
+    loop { 
+        kprintln!("hello from process 1!!"); 
+        timer::spin_sleep(Duration::from_millis(250));
+    }
+}
+
+pub extern fn tp2() {
+    loop { 
+        kprintln!("hello from process 2!!"); 
+        timer::spin_sleep(Duration::from_millis(250));
+    }
 }
 
 fn kmain() -> ! {
@@ -50,6 +70,7 @@ fn kmain() -> ! {
         ALLOCATOR.initialize();
         //FILESYSTEM.initialize();
         IRQ.initialize();
+        SCHEDULER.initialize();
         SCHEDULER.start();
     } 
 

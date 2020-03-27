@@ -1,0 +1,2 @@
+The scheduler doesn't know whether the process should be ready, waiting, or killed when it deschedules a 
+process.

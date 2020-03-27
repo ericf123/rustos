@@ -1,1 +1,1 @@
-ttywrite -i ./build/kernel.bin /dev/ttyUSB3
+ttywrite -i ./build/kernel.bin /dev/ttyUSB0
