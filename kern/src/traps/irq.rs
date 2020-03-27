@@ -21,12 +21,25 @@ impl Irq {
     /// Register an irq handler for an interrupt.
     /// The caller should assure that `initialize()` has been called before calling this function.
     pub fn register(&self, int: Interrupt, handler: IrqHandler) {
-        unimplemented!("Irq::register()")
+        self.0.lock().as_mut().expect("register handlers")[Interrupt::to_index(int)] = Some(handler);
     }
 
     /// Executes an irq handler for the givven interrupt.
     /// The caller should assure that `initialize()` has been called before calling this function.
     pub fn invoke(&self, int: Interrupt, tf: &mut TrapFrame) {
-        unimplemented!("Irq::register()")
+        // this syntax is physically painful
+        self.0.lock()
+              .as_mut()
+              .expect("invoke handlers")[Interrupt::to_index(int)]
+              .as_mut()
+              .expect("hanlder exists")(tf);
     }
+
+    pub fn handler_exists(&self, int: Interrupt) -> bool {
+        match &self.0.lock().as_mut().expect("irq not initialized")[Interrupt::to_index(int)] {
+            Some(f) => true,
+            None => false
+        }
+    }
+
 }

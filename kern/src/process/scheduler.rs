@@ -11,11 +11,21 @@ use crate::traps::TrapFrame;
 use crate::VMM;
 use crate::start_shell;
 use crate::init::_start;
+use crate::console::kprintln;
+use crate::IRQ;
+extern crate pi;
+use pi::interrupt;
+use pi::timer;
+use core::time::Duration;
 
 /// Process scheduler for the entire machine.
 #[derive(Debug)]
 pub struct GlobalScheduler(Mutex<Option<Scheduler>>);
 
+fn timer_handler(tf: &mut TrapFrame) {
+    kprintln!("timer interrupt...scheduling next one");
+    timer::tick_in(TICK); 
+}
 
 impl GlobalScheduler {
     /// Returns an uninitialized wrapper around a local scheduler.
@@ -69,18 +79,27 @@ impl GlobalScheduler {
     /// Starts executing processes in user space using timer interrupt based
     /// preemptive scheduling. This method should not return under normal conditions.
     pub fn start(&self) -> ! {
-        // need to unmask IRQ in SPSR
-        // point pc to start shell (elr)?
+        kprintln!("hello start");
         let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
-        first_proc.context.elr = start_shell as u64;// &start_shell as *const u64 as u64;
-        
+        first_proc.context.elr = start_shell as u64;
         first_proc.context.sp = first_proc.stack.top().as_mut_ptr() as u64;
         // set bit 4 to be in aarch64 (0)
         // set bits 0-3 to execute in EL0, correct sp (0)
         // unmask irq interrupts bit 7 = 0
         first_proc.context.spsr = 0b1101_00_0000;
+
+        // register timer interrupt handler
+        IRQ.register(interrupt::Interrupt::Timer1, Box::new(timer_handler));
+
+        // enable timer interrupts
+        let mut int_controller = interrupt::Controller::new();
+        int_controller.enable(interrupt::Interrupt::Timer1);
+
+        // set timer interrupt to occur in TICK duration
+        timer::tick_in(TICK);
+
         unsafe {
-            asm!("mov SP, x0
+            asm!("mov SP, $0
                   bl context_restore
                   adr lr, _start
                   mov SP, lr

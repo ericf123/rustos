@@ -1,0 +1,4 @@
+Separating the wait queue from the ready queue is advantageous because we could design waiting processes such
+that they get moved to ready when their event occurs (e.g. by executing a syscall as soon as their event occurs).
+This would probably result in lower latency and better throughput for tasks in the ready queue because we can 
+avoid polling the tasks that are in the waiting state, which wastes time in the scheduler. 

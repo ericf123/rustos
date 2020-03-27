@@ -1,0 +1,7 @@
+You might want to nest I/O bound interrupt handlers, because the interrupt service routine could be slow,
+and you want to be able to interrupt it for other interrupts that are very fast to handle (computation bound).
+
+Doing this without first acknowledging pending IRQs would not necessarily cause an exception loop as there is 
+eventually an ISR that masks interrupts. This would likely have to be the ISR that handles interrupts that 
+are fast to handle, which then would handle all of the pending IRQs that are relatively fast, and eventually
+get to the slower to handle IRQ.

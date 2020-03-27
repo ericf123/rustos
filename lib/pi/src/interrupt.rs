@@ -5,7 +5,7 @@ use volatile::{Volatile, ReadVolatile};
 
 const INT_BASE: usize = IO_BASE + 0xB000 + 0x200;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Interrupt {
     Timer1 = 1,
     Timer3 = 3,
@@ -76,7 +76,16 @@ impl From<usize> for Interrupt {
 #[repr(C)]
 #[allow(non_snake_case)]
 struct Registers {
-    // FIXME: Fill me in.
+    IRQBasicPending: ReadVolatile<u32>,
+    IRQPending1: ReadVolatile<u32>,
+    IRQPending2: ReadVolatile<u32>,
+    FIQControl: Volatile<u32>,
+    EnableIRQ1: Volatile<u32>,
+    EnableIRQ2: Volatile<u32>,
+    EnableBasicIRQ: Volatile<u32>,
+    DisableIRQ1: Volatile<u32>,
+    DisableIRQ2: Volatile<u32>,
+    DisableBasicIRQ: Volatile<u32>,
 }
 
 /// An interrupt controller. Used to enable and disable interrupts as well as to
@@ -95,16 +104,46 @@ impl Controller {
 
     /// Enables the interrupt `int`.
     pub fn enable(&mut self, int: Interrupt) {
-        unimplemented!()
+        use Interrupt::*;
+        match int {
+            Timer1 => self.registers.EnableIRQ1.write(self.registers.EnableIRQ1.read() | 1 << 1),
+            Timer3 => self.registers.EnableIRQ1.write(self.registers.EnableIRQ1.read() | 1 << 3),
+            Usb => self.registers.EnableIRQ1.write(self.registers.EnableIRQ1.read() | 1 << 9),
+            Gpio0 => self.registers.EnableIRQ2.write(self.registers.EnableIRQ2.read() | 1 << 17),
+            Gpio1 => self.registers.EnableIRQ2.write(self.registers.EnableIRQ2.read() | 1 << 18),
+            Gpio2 => self.registers.EnableIRQ2.write(self.registers.EnableIRQ2.read() | 1 << 19),
+            Gpio3 => self.registers.EnableIRQ2.write(self.registers.EnableIRQ2.read() | 1 << 20),
+            Uart => self.registers.EnableIRQ2.write(self.registers.EnableIRQ2.read() | 1 << 25),
+        }
     }
 
     /// Disables the interrupt `int`.
     pub fn disable(&mut self, int: Interrupt) {
-        unimplemented!()
+        use Interrupt::*;
+        match int {
+            Timer1 => self.registers.DisableIRQ1.write(self.registers.DisableIRQ1.read() | 1 << 1),
+            Timer3 => self.registers.DisableIRQ1.write(self.registers.DisableIRQ1.read() | 1 << 3),
+            Usb => self.registers.DisableIRQ1.write(self.registers.DisableIRQ1.read() | 1 << 9),
+            Gpio0 => self.registers.DisableIRQ2.write(self.registers.DisableIRQ2.read() | 1 << 17),
+            Gpio1 => self.registers.DisableIRQ2.write(self.registers.DisableIRQ2.read() | 1 << 18),
+            Gpio2 => self.registers.DisableIRQ2.write(self.registers.DisableIRQ2.read() | 1 << 19),
+            Gpio3 => self.registers.DisableIRQ2.write(self.registers.DisableIRQ2.read() | 1 << 20),
+            Uart => self.registers.DisableIRQ2.write(self.registers.DisableIRQ2.read() | 1 << 25),
+        }
     }
 
     /// Returns `true` if `int` is pending. Otherwise, returns `false`.
     pub fn is_pending(&self, int: Interrupt) -> bool {
-        unimplemented!()
+        use Interrupt::*;
+        match int {
+            Timer1 => (self.registers.IRQPending1.read() & 1 << 1) != 0,
+            Timer3 => (self.registers.IRQPending1.read() & 1 << 3) != 0,
+            Usb => (self.registers.IRQPending1.read() & 1 << 9) != 0,
+            Gpio0 => (self.registers.IRQPending2.read() & 1 << 17) != 0,
+            Gpio1 => (self.registers.IRQPending2.read() & 1 << 18) != 0,
+            Gpio2 => (self.registers.IRQPending2.read() & 1 << 19) != 0,
+            Gpio3 => (self.registers.IRQPending2.read() & 1 << 20) != 0,
+            Uart => (self.registers.IRQPending2.read() & 1 << 25) != 0,
+        }
     }
 }
