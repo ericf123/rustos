@@ -76,12 +76,12 @@ fn sleep(args: &mut StackVec<&str>) {
         Some(msStr) => match u64::from_str_radix(msStr, 10) {
             Ok(val) => val, 
             Err(_) => {
-                kprintln!("cannot parse u64 from {}", msStr);
+                kprintln!("\ncannot parse u64 from {}", msStr);
                 return;
             }
         },
         None => {
-            kprintln!("usage: sleep <ms>");
+            kprintln!("\nusage: sleep <ms>");
             return;
         } 
     };

@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use core::time::Duration;
 
-use crate::console::CONSOLE;
+use crate::console::{CONSOLE, kprintln};
 use crate::process::State;
 use crate::process::state::EventPollFn;
 use crate::process::*;
@@ -22,15 +22,18 @@ use pi::timer;
 pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
     let done_time = timer::current_time() + Duration::from_millis(ms as u64);
     let done_sleeping: EventPollFn = Box::new(move |process| {
+        //kprintln!("hello from poll fn");
         if timer::current_time() >= done_time {
             // save return value and ecode
             let ret_val = Duration::as_millis(&(timer::current_time() - done_time)) as u64;
-            unsafe {
+            /*unsafe {
                 asm!("mov x0, $0
                       mov x7, #1"
                     :: "r"(ret_val)
                     :: "volatile");
-            }
+            }*/
+            process.context.x_regs[0] = ret_val; // set actually elapsed ms
+            process.context.x_regs[7] = 1; // no error
             return true;
         }
         return false;
@@ -79,8 +82,11 @@ pub fn sys_getpid(tf: &mut TrapFrame) {
 
 pub fn handle_syscall(num: u16, tf: &mut TrapFrame) {
     use crate::console::kprintln;
+    //kprintln!("hello from handle syscall");
+    //kprintln!("sleep for {} ms", tf.x_regs[0]);
     match num {
         1 => sys_sleep(tf.x_regs[0] as u32, tf),
         _ => unimplemented!("unimplemented syscall!!")
     };
+    //kprintln!("leave handle syscall");
 }

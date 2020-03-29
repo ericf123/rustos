@@ -14,6 +14,7 @@ use crate::init::_start;
 use crate::console::kprintln;
 use crate::IRQ;
 use crate::SCHEDULER;
+use crate::start_shell;
 extern crate pi;
 use pi::interrupt;
 use pi::timer;
@@ -69,7 +70,7 @@ impl GlobalScheduler {
             if let Some(id) = rtn {
                 return id;
             }
-            aarch64::wfe();
+            aarch64::wfi();
         }
     }
 
@@ -118,7 +119,7 @@ impl GlobalScheduler {
         
         // setup first proc
         let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
-        first_proc.context.elr = tp1 as u64;
+        first_proc.context.elr = start_shell as u64;
         first_proc.context.sp = first_proc.stack.top().as_mut_ptr() as u64;
         // set bit 4 to be in aarch64 (0)
         // set bits 0-3 to execute in EL0, correct sp (0)
@@ -130,7 +131,7 @@ impl GlobalScheduler {
         second_proc.context.elr = tp2 as u64;
         second_proc.context.sp = second_proc.stack.top().as_mut_ptr() as u64;
         second_proc.context.spsr = 0b1101_00_0000;
-        self.critical(|scheduler| scheduler.add(second_proc));
+        //self.critical(|scheduler| scheduler.add(second_proc));
     }
 
     // The following method may be useful for testing Phase 3:
@@ -267,6 +268,7 @@ impl fmt::Display for Scheduler {
 }
 
 pub extern "C" fn  test_user_process() -> ! {
+    kprintln!("hello");
     loop {
         let ms = 10000;
         let error: u64;
@@ -282,6 +284,9 @@ pub extern "C" fn  test_user_process() -> ! {
                  : "x0", "x7"
                  : "volatile");
         }
+
+        kprintln!("error: {}", error);
+        kprintln!("elapsed: {}", elapsed_ms);
     }
 }
 

@@ -52,12 +52,14 @@ pub extern "C" fn start_shell() {
 }
 
 pub extern fn tp1() {
-    let mut i = 0;
+    /*let mut i = 0;
     while true { 
         kprintln!("hello from process 1 ({})", i); 
         timer::spin_sleep(Duration::from_millis(250));
         i += 1;
-    }
+    }*/
+
+    shell::shell("user1> ");
 }
 
 pub extern fn tp2() {
@@ -67,6 +69,8 @@ pub extern fn tp2() {
         timer::spin_sleep(Duration::from_millis(250));
         i -= 1;
     }
+
+    //shell::shell("user2> ");
 }
 
 fn kmain() -> ! {
