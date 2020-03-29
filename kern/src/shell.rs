@@ -71,6 +71,24 @@ fn blinkyboi() {
     }
 }
 
+fn sleep(args: &mut StackVec<&str>) {
+    let ms = match args.pop() {
+        Some(msStr) => match u64::from_str_radix(msStr, 10) {
+            Ok(val) => val, 
+            Err(_) => {
+                kprintln!("cannot parse u64 from {}", msStr);
+                return;
+            }
+        },
+        None => {
+            kprintln!("usage: sleep <ms>");
+            return;
+        } 
+    };
+
+    kernel_api::syscall::sleep(Duration::from_millis(ms));
+}
+
 fn ls<P: AsRef<Path>>(cwd: P, args: &mut StackVec<&str>) {
     use fat32::traits::Metadata;
     let mut dir_path: PathBuf; 
@@ -355,9 +373,7 @@ pub fn shell(prefix: &str) {
                             kprintln!("{}", entry.name());
                         }
                     }
-                    /*"test_string" => {
-                        String::from("hello");
-                    }*/
+                    "sleep" => sleep(&mut command.args),
                     "exit" => {
                         kprintln!();
                         break;

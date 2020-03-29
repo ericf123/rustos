@@ -1,0 +1,3 @@
+The advantage of a separate error code register is that the first return value of the syscall is not limited 
+to non-negative numbers, which is the case if we overload the first return value register. The disadvantage
+is that we have to read a separate register to check for errors.

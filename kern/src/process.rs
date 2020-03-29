@@ -1,7 +1,7 @@
 mod process;
 mod scheduler;
 mod stack;
-mod state;
+pub mod state;
 
 pub use self::process::{Id, Process};
 pub use self::scheduler::GlobalScheduler;

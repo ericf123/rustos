@@ -93,7 +93,11 @@ impl GlobalScheduler {
         // set timer interrupt to occur TICK duration from now
         timer::tick_in(TICK);
 
-        let bootstrap_context = self.critical(|scheduler| scheduler.get_bootstrap_context());
+        //let bootstrap_context = self.critical(|scheduler| scheduler.get_bootstrap_context());
+        let mut bootstrap_frame = TrapFrame::default();
+        self.switch_to(&mut bootstrap_frame);
+        let bootstrap_frame_addr = &bootstrap_frame as *const TrapFrame as u64;
+
         unsafe {
             asm!("mov SP, $0
                   bl context_restore
@@ -101,7 +105,7 @@ impl GlobalScheduler {
                   mov SP, lr
                   mov lr, xzr
                   eret"
-                :: "r"(Box::into_raw(bootstrap_context))
+                :: "r"(bootstrap_frame_addr)
                 :: "volatile");
         }
         
@@ -197,6 +201,7 @@ impl Scheduler {
         if let Some(mut running_proc) = self.processes.iter_mut().nth(0) {
             if let State::Running = running_proc.state {
                 running_proc.state = new_state;
+                running_proc.context = Box::new(*tf);
                 self.processes.rotate_left(1); // pop current from front and push to back
                 return true;
             }

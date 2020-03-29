@@ -1,0 +1,10 @@
+The elapsed time will differ from the requested time if the requested time does not align with
+the process's time slice. This is because the process can only be woken back up when the scheduler
+polls its ready function, and it will only do this when the process is about to be scheduled. The value 
+will be identical if the sleep time is done exactly at the same time as the scheduler is trying to schedule 
+the process. 
+
+Most of the time, the requested time will not be identical to the actual time. The probability that the 
+two times match is a function of the number of processes in the queue and the time quantum, as the time quantum
+of the scheduler and the number of processes in the queue increase, the probability that the requested time will
+match the actual time will decrease.

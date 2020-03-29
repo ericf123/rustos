@@ -52,20 +52,25 @@ pub extern "C" fn start_shell() {
 }
 
 pub extern fn tp1() {
-    loop { 
-        kprintln!("hello from process 1!!"); 
+    let mut i = 0;
+    while true { 
+        kprintln!("hello from process 1 ({})", i); 
         timer::spin_sleep(Duration::from_millis(250));
+        i += 1;
     }
 }
 
 pub extern fn tp2() {
-    loop { 
-        kprintln!("hello from process 2!!"); 
+    let mut i = 100000000;
+    while true { 
+        kprintln!("hello from process 2 ({})", i); 
         timer::spin_sleep(Duration::from_millis(250));
+        i -= 1;
     }
 }
 
 fn kmain() -> ! {
+    timer::spin_sleep(Duration::from_secs(5));
     unsafe {
         ALLOCATOR.initialize();
         //FILESYSTEM.initialize();

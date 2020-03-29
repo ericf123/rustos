@@ -1,7 +1,5 @@
 .global context_save
 context_save:
-    stp x30, xzr,  [SP, #-16]!
-    stp x28, x29,  [SP, #-16]!
     stp x26, x27,  [SP, #-16]!
     stp x24, x25,  [SP, #-16]!
     stp x22, x23,  [SP, #-16]!
@@ -89,7 +87,6 @@ context_restore:
     ldp x22, x23,  [SP], #16
     ldp x24, x25,  [SP], #16
     ldp x26, x27,  [SP], #16
-    ldp x28, x29,  [SP], #16
     ret 
 
 .macro HANDLER source, kind

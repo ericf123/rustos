@@ -9,7 +9,7 @@ import shutil
 import time
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-CACHE = "/tmp/.cs3210-sdcard-dir.txt"
+CACHE = "./.cs3210-sdcard-dir.txt"
 
 def load_target_dir():
     global CACHE

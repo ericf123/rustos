@@ -1,7 +1,5 @@
 use core::fmt;
-
 use alloc::boxed::Box;
-
 use crate::process::Process;
 
 /// Type of a function used to determine if a process is ready to be scheduled

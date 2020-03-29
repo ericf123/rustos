@@ -58,6 +58,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 shell::shell("debug> "); 
                 tf.elr += 4;
             },
+            Syndrome::Svc(num) => handle_syscall(num, tf),
             syndrome @ _ => kprintln!("no handler: {:#?}", syndrome),
         },
         Info {source, kind: Kind::Irq} => {
