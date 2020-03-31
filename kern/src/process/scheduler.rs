@@ -143,12 +143,15 @@ impl GlobalScheduler {
         
         //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
         //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
         //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
         //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
         //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
     }
 
     // The following method may be useful for testing Phase 3:
@@ -216,11 +219,11 @@ impl Scheduler {
     /// returns `false`. Otherwise, returns `true`.
     fn schedule_out(&mut self, new_state: State, tf: &mut TrapFrame) -> bool {
         // currently running process should be at top of queue
-        if let Some(mut running_proc) = self.processes.iter_mut().nth(0) {
+        if let Some(mut running_proc) = self.processes.pop_front() {
             if let State::Running = running_proc.state {
                 running_proc.state = new_state;
                 running_proc.context = Box::new(*tf);
-                self.processes.rotate_left(1); // pop current from front and push to back
+                self.processes.push_back(running_proc); // pop current from front and push to back
                 return true;
             }
         }
@@ -256,14 +259,18 @@ impl Scheduler {
     /// as `Dead` state. Removes the dead process from the queue, drop the
     /// dead process's instance, and returns the dead process's process ID.
     fn kill(&mut self, tf: &mut TrapFrame) -> Option<Id> {
-        //timer::spin_sleep(Duration::from_secs(5));
         // stop current proc and set state to dead
-        self.schedule_out(State::Dead, tf); 
-        // dead boi will be at back of queue after schedule out
-        // this method needs to be syncronized for this to work properly
-        // removing kill_me this way also drops it
-        let mut kill_me = self.processes.pop_back()?;
-        Some(kill_me.context.tpidr)
+        if self.schedule_out(State::Dead, tf) {
+            // dead boi will be at back of queue after schedule out
+            // this method needs to be syncronized for this to work properly
+            let mut kill_me = self.processes.pop_back()?;
+            let pid = kill_me.context.tpidr;
+            core::mem::drop(kill_me);
+            self.switch_to(tf);
+            Some(pid)
+        } else {
+            None
+        }
     }
 }
 

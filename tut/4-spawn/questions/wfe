@@ -1,4 +1,4 @@
-This is correct behavior because when all processes in the queue are waiting, then we must wait for SEV to
-be called on some core, or for the event register to get set some other way. This is correct because it will 
-resume the scheduler when the event occurs, and if the queue is actually empty, no event will ever occur,
-so there is no reason to waste power.
+This is not the correct behavior and causes the scheduler never to resume, because SEV is never called. This 
+has to be changed to wfi for it work because otherwise the scheduler never gets woken up to call the Waiting 
+poll function, and never schedules another process. For wfe to work, we would need a different core to call SEV
+at some point when a process is done waiting.

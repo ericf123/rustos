@@ -8,7 +8,7 @@ use crate::process::*;
 use crate::traps::TrapFrame;
 use crate::SCHEDULER;
 use kernel_api::*;
-
+use aarch64;
 extern crate pi;
 use pi::timer;
 
@@ -62,6 +62,7 @@ pub fn sys_time(tf: &mut TrapFrame) {
 /// This system call does not take paramer and does not return any value.
 pub fn sys_exit(tf: &mut TrapFrame) {
     SCHEDULER.kill(tf);
+    aarch64::wfi();
 }
 
 /// Write to console.

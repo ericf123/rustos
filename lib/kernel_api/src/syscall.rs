@@ -62,7 +62,6 @@ pub fn exit() -> ! {
             :: "i"(NR_EXIT)
             :: "volatile");
     }
-    println!("abt to loop");
     loop {}
 }
 
