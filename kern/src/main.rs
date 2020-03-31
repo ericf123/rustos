@@ -52,14 +52,14 @@ pub extern "C" fn start_shell() {
 }
 
 pub extern fn tp1() {
-    /*let mut i = 0;
+    let mut i = 0;
     while true { 
         kprintln!("hello from process 1 ({})", i); 
         timer::spin_sleep(Duration::from_millis(250));
         i += 1;
-    }*/
+    }
 
-    shell::shell("user1> ");
+    //shell::shell("user1> ");
 }
 
 pub extern fn tp2() {
@@ -74,14 +74,16 @@ pub extern fn tp2() {
 }
 
 fn kmain() -> ! {
-    timer::spin_sleep(Duration::from_secs(5));
+    //timer::spin_sleep(Duration::from_secs(5));
+    //kprintln!("kernel start...");
     unsafe {
         ALLOCATOR.initialize();
         //FILESYSTEM.initialize();
         IRQ.initialize();
+        VMM.initialize();
         SCHEDULER.initialize();
         SCHEDULER.start();
-    } 
+    }
 
     //aarch64::brk!(2);
 

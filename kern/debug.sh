@@ -3,7 +3,7 @@ foo=$(mktemp)
 
 cat > "$foo" <<EOF
 target remote :1234
-add-symbol-file build/kernel.bin 0x80000
+add-symbol-file build/kernel.elf 0x80000
 
 define fn
 $i 
@@ -12,4 +12,4 @@ end
 
 EOF
 
-exec rust-gdb target/aarch64-unknown-none/release/kernel -x "$foo"
+exec aarch64-linux-gnu-gdb target/aarch64-unknown-none/release/kernel -x "$foo"

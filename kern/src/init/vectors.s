@@ -37,8 +37,11 @@ context_save:
     mrs x1, SPSR_EL1
     mrs x2, SP_EL0
     mrs x3, TPIDR_EL0
+    mrs x4, TTBR0_EL1
+    mrs x5, TTBR1_EL1
     stp x1, x0,    [SP, #-16]!
     stp x3, x2,    [SP, #-16]!
+    stp x4, x5,    [SP, #-16]!
     mov x28, lr 
     // pass the parameters
     mov x0, x29     // info struct (set up by HANDLER macro)
@@ -50,8 +53,17 @@ context_save:
 .global context_restore
 context_restore:
     // load the saved system regs
+    ldp x4, x5,    [SP], #16
     ldp x3, x2,    [SP], #16
     ldp x1, x0,    [SP], #16
+    msr TTBR0_EL1, x4
+    msr TTBR1_EL1, x5
+    // let mem accesses complete
+    dsb     ishst
+    tlbi    vmalle1
+    dsb     ish
+    isb
+
     msr TPIDR_EL0, x3
     msr SP_EL0, x2
     msr SPSR_EL1, x1

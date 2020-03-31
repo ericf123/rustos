@@ -60,6 +60,7 @@ impl GlobalScheduler {
     /// the documentation on `Scheduler::schedule_out()` and `Scheduler::switch_to()`.
     pub fn switch(&self, new_state: State, tf: &mut TrapFrame) -> Id {
         //self.critical(|scheduler| kprintln!("{}", scheduler));
+        kprintln!("TTBR0: {} TTBR1: {}", tf.ttbr0, tf.ttbr1);
         self.critical(|scheduler| scheduler.schedule_out(new_state, tf));
         self.switch_to(tf)
     }
@@ -94,18 +95,18 @@ impl GlobalScheduler {
         // set timer interrupt to occur TICK duration from now
         timer::tick_in(TICK);
 
-        //let bootstrap_context = self.critical(|scheduler| scheduler.get_bootstrap_context());
         let mut bootstrap_frame = TrapFrame::default();
         self.switch_to(&mut bootstrap_frame);
         let bootstrap_frame_addr = &bootstrap_frame as *const TrapFrame as u64;
-
         unsafe {
             asm!("mov SP, $0
                   bl context_restore
-                  adr lr, _start
+                  adr lr, _next_page
                   mov SP, lr
                   mov lr, xzr
-                  eret"
+                  eret
+                  _next_page:
+                    .balign 0x10000"
                 :: "r"(bootstrap_frame_addr)
                 :: "volatile");
         }
@@ -116,40 +117,47 @@ impl GlobalScheduler {
     /// Initializes the scheduler and add userspace processes to the Scheduler
     pub unsafe fn initialize(&self) {
         *self.0.lock() = Some(Scheduler::new()); 
-        
         // setup first proc
         let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
-        first_proc.context.elr = start_shell as u64;
+        first_proc.context.ttbr0 = VMM.get_baddr().as_u64();
+        first_proc.context.ttbr1 = first_proc.vmap.get_baddr().as_u64();
+        first_proc.context.elr = USER_IMG_BASE as u64;//start_shell as u64;
         first_proc.context.sp = first_proc.stack.top().as_mut_ptr() as u64;
+        //first_proc.context.ttbr0 = 1 << 6;
+        //first_proc.context.ttbr1 = 1 << 7;
         // set bit 4 to be in aarch64 (0)
         // set bits 0-3 to execute in EL0, correct sp (0)
         // unmask irq interrupts bit 7 = 0
         first_proc.context.spsr = 0b1101_00_0000;
+        self.test_phase_3(&mut first_proc);
         self.critical(|scheduler| scheduler.add(first_proc));
 
         let mut second_proc = Process::new().unwrap(); // if this panics we have big problems
-        second_proc.context.elr = tp2 as u64;
+        second_proc.context.elr = USER_IMG_BASE as u64;
         second_proc.context.sp = second_proc.stack.top().as_mut_ptr() as u64;
         second_proc.context.spsr = 0b1101_00_0000;
-        //self.critical(|scheduler| scheduler.add(second_proc));
+        second_proc.context.ttbr0 = VMM.get_baddr().as_u64();
+        second_proc.context.ttbr1 = second_proc.vmap.get_baddr().as_u64();
+        self.test_phase_3(&mut second_proc);
+        self.critical(|scheduler| scheduler.add(second_proc));
     }
 
     // The following method may be useful for testing Phase 3:
     //
     // * A method to load a extern function to the user process's page table.
     //
-    // pub fn test_phase_3(&self, proc: &mut Process){
-    //     use crate::vm::{VirtualAddr, PagePerm};
-    //
-    //     let mut page = proc.vmap.alloc(
-    //         VirtualAddr::from(USER_IMG_BASE as u64), PagePerm::RWX);
-    //
-    //     let text = unsafe {
-    //         core::slice::from_raw_parts(test_user_process as *const u8, 24)
-    //     };
-    //
-    //     page[0..24].copy_from_slice(text);
-    // }
+    pub fn test_phase_3(&self, proc: &mut Process){
+        use crate::vm::{VirtualAddr, PagePerm};
+    
+        let mut page = proc.vmap.alloc(
+            VirtualAddr::from(USER_IMG_BASE as u64), PagePerm::RWX);
+    
+        let text = unsafe {
+            core::slice::from_raw_parts(test_user_process as *const u8, 24)
+        };
+    
+        page[0..24].copy_from_slice(text);
+    }
 }
 
 #[derive(Debug)]
@@ -248,14 +256,6 @@ impl Scheduler {
         Some(kill_me.context.tpidr)
 
     }
-    
-    /// Return a mutable reference to the first process in the queue's context
-    /// Should only be used inside of GlobalScheduler::Start 
-    /// Assumes that the process queue is initialized and that the first process
-    /// in the queue is initialized
-    fn get_bootstrap_context(&mut self) -> Box<TrapFrame> {
-        self.processes.get_mut(0).expect("bootstrap failed").context.clone()
-    }
 }
 
 impl fmt::Display for Scheduler {
@@ -268,7 +268,8 @@ impl fmt::Display for Scheduler {
 }
 
 pub extern "C" fn  test_user_process() -> ! {
-    kprintln!("hello");
+    //kprintln!("hello");
+    //timer::spin_sleep(Duration::from_secs(5));
     loop {
         let ms = 10000;
         let error: u64;
@@ -285,8 +286,8 @@ pub extern "C" fn  test_user_process() -> ! {
                  : "volatile");
         }
 
-        kprintln!("error: {}", error);
-        kprintln!("elapsed: {}", elapsed_ms);
+        //kprintln!("error: {}", error);
+        //kprintln!("elapsed: {}", elapsed_ms);
     }
 }
 

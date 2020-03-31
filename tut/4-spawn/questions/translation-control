@@ -1,0 +1,4 @@
+We set T1SZ to 34, meaning that 34 bits are used for TTBR select, we use one bit for L2 index because there are 
+only 2 L3 page tables. 
+This is achieved by modifying the TCR_EL1 register, which contains parameters for the MMU. These are set in 
+the setup() method of VMManager.

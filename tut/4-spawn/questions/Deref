@@ -1,0 +1,3 @@
+We need these traits so that the compiler knows it can automatically add deref coersion when it encounters
+a reference to one of these types, which makes the code cleaner and enables use to use these types inside of
+Box.

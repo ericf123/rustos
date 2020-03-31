@@ -1,0 +1,2 @@
+The MMU uses TTBR0_EL1 when the upper bits of the virtual address are all set to 0. It uses TTBR1_EL1 when 
+the upper bits of the virtual addresss are all set to 1.
