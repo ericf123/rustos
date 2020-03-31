@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use core::time::Duration;
 
-use crate::console::{CONSOLE, kprintln};
+use crate::console::{CONSOLE, kprintln, kprint};
 use crate::process::State;
 use crate::process::state::EventPollFn;
 use crate::process::*;
@@ -51,14 +51,17 @@ pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
 ///  - current time as seconds
 ///  - fractional part of the current time, in nanoseconds.
 pub fn sys_time(tf: &mut TrapFrame) {
-    unimplemented!("sys_time()");
+    let curr_time = timer::current_time();
+    tf.x_regs[0] = curr_time.as_secs();
+    tf.x_regs[1] = curr_time.subsec_nanos() as u64;
+    tf.x_regs[7] = OsError::Ok as u64;
 }
 
 /// Kills current process.
 ///
 /// This system call does not take paramer and does not return any value.
 pub fn sys_exit(tf: &mut TrapFrame) {
-    unimplemented!("sys_exit()");
+    SCHEDULER.kill(tf);
 }
 
 /// Write to console.
@@ -67,7 +70,8 @@ pub fn sys_exit(tf: &mut TrapFrame) {
 ///
 /// It only returns the usual status value.
 pub fn sys_write(b: u8, tf: &mut TrapFrame) {
-    unimplemented!("sys_write()");
+    kprint!("{}", b as char);
+    tf.x_regs[7] = OsError::Ok as u64;
 }
 
 /// Returns current process's ID.
@@ -77,16 +81,18 @@ pub fn sys_write(b: u8, tf: &mut TrapFrame) {
 /// In addition to the usual status value, this system call returns a
 /// parameter: the current process's ID.
 pub fn sys_getpid(tf: &mut TrapFrame) {
-    unimplemented!("sys_getpid()");
+    tf.x_regs[0] = tf.tpidr;
+    tf.x_regs[7] = OsError::Ok as u64;
 }
 
 pub fn handle_syscall(num: u16, tf: &mut TrapFrame) {
     use crate::console::kprintln;
-    //kprintln!("hello from handle syscall");
-    //kprintln!("sleep for {} ms", tf.x_regs[0]);
-    match num {
-        1 => sys_sleep(tf.x_regs[0] as u32, tf),
+    match num as usize {
+        NR_SLEEP => sys_sleep(tf.x_regs[0] as u32, tf),
+        NR_WRITE => sys_write(tf.x_regs[0] as u8, tf),
+        NR_TIME => sys_time(tf),
+        NR_EXIT => sys_exit(tf),
+        NR_GETPID => sys_getpid(tf),
         _ => unimplemented!("unimplemented syscall!!")
     };
-    //kprintln!("leave handle syscall");
 }

@@ -60,7 +60,7 @@ impl GlobalScheduler {
     /// the documentation on `Scheduler::schedule_out()` and `Scheduler::switch_to()`.
     pub fn switch(&self, new_state: State, tf: &mut TrapFrame) -> Id {
         //self.critical(|scheduler| kprintln!("{}", scheduler));
-        kprintln!("TTBR0: {} TTBR1: {}", tf.ttbr0, tf.ttbr1);
+        //kprintln!("TTBR0: {} TTBR1: {}", tf.ttbr0, tf.ttbr1);
         self.critical(|scheduler| scheduler.schedule_out(new_state, tf));
         self.switch_to(tf)
     }
@@ -141,10 +141,14 @@ impl GlobalScheduler {
         self.test_phase_3(&mut second_proc);
         self.critical(|scheduler| scheduler.add(second_proc));*/
         
+        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
         self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
+        //self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
     }
 
     // The following method may be useful for testing Phase 3:
@@ -252,6 +256,7 @@ impl Scheduler {
     /// as `Dead` state. Removes the dead process from the queue, drop the
     /// dead process's instance, and returns the dead process's process ID.
     fn kill(&mut self, tf: &mut TrapFrame) -> Option<Id> {
+        //timer::spin_sleep(Duration::from_secs(5));
         // stop current proc and set state to dead
         self.schedule_out(State::Dead, tf); 
         // dead boi will be at back of queue after schedule out
@@ -259,7 +264,6 @@ impl Scheduler {
         // removing kill_me this way also drops it
         let mut kill_me = self.processes.pop_back()?;
         Some(kill_me.context.tpidr)
-
     }
 }
 

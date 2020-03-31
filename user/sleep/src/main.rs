@@ -1,17 +1,11 @@
 #![feature(asm)]
-
 #![no_std]
 #![no_main]
 
-use core::panic::PanicInfo;
+use kernel_api::println;
+mod cr0;
 
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
-
-#[no_mangle]
-pub extern "C" fn _start() -> ! {
+fn main() {
     loop {
         let ms = 10000;
         let error: u64;
@@ -27,5 +21,6 @@ pub extern "C" fn _start() -> ! {
                  : "x0", "x7"
                  : "volatile");
         }
+        println!("Wait error ms: {}", elapsed_ms);
     }
 }

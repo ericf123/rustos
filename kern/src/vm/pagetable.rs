@@ -116,30 +116,6 @@ impl PageTable {
             l3: [L3PageTable::new(), L3PageTable::new()]
         });
 
-        //let mut first_l2_entry = RawL2Entry::new(0);
-        //let mut second_l2_entry = RawL2Entry::new(0);
-
-        /*// points to first l3 table
-        //first_l2_entry.set_value(pt.l3[0].as_ptr().as_u64() >> 16, RawL2Entry::ADDR);
-        first_l2_entry.set_value(EntryValid::Valid, RawL2Entry::VALID);
-        first_l2_entry.set_value(EntryType::Table, RawL2Entry::TYPE);
-        //first_l2_entry.set_value(EntryAttr::Mem, RawL2Entry::ATTR);
-        first_l2_entry.set_value(perm, RawL2Entry::AP);
-        //first_l2_entry.set_value(EntrySh::ISh, RawL2Entry::SH);
-        first_l2_entry.set_value(1, RawL2Entry::AF);
-
-        // points to second l3 table
-        //second_l2_entry.set_value(pt.l3[1].as_ptr().as_u64() >> 16, RawL2Entry::ADDR);
-        second_l2_entry.set_value(EntryValid::Valid, RawL2Entry::VALID);
-        second_l2_entry.set_value(EntryType::Table, RawL2Entry::TYPE);
-        //second_l2_entry.set_value(EntryAttr::Mem, RawL2Entry::ATTR);
-        second_l2_entry.set_value(perm, RawL2Entry::AP);
-        //second_l2_entry.set_value(EntrySh::ISh, RawL2Entry::SH);
-        second_l2_entry.set_value(1, RawL2Entry::AF);*/
-
-        //pt.l2.entries[0] = first_l2_entry;
-        //pt.l2.entries[1] = second_l2_entry;
-
         for i in 0..pt.l3.len() {
             pt.l2.entries[i].set_value(pt.l3[i].as_ptr().as_u64() >> 16, RawL2Entry::ADDR);
             pt.l2.entries[i].set_value(EntryValid::Valid, RawL2Entry::VALID);
