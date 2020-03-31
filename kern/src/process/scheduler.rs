@@ -118,7 +118,7 @@ impl GlobalScheduler {
     pub unsafe fn initialize(&self) {
         *self.0.lock() = Some(Scheduler::new()); 
         // setup first proc
-        let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
+        /*let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
         first_proc.context.ttbr0 = VMM.get_baddr().as_u64();
         first_proc.context.ttbr1 = first_proc.vmap.get_baddr().as_u64();
         first_proc.context.elr = USER_IMG_BASE as u64;//start_shell as u64;
@@ -139,7 +139,12 @@ impl GlobalScheduler {
         second_proc.context.ttbr0 = VMM.get_baddr().as_u64();
         second_proc.context.ttbr1 = second_proc.vmap.get_baddr().as_u64();
         self.test_phase_3(&mut second_proc);
-        self.critical(|scheduler| scheduler.add(second_proc));
+        self.critical(|scheduler| scheduler.add(second_proc));*/
+        
+        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
+        self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
     }
 
     // The following method may be useful for testing Phase 3:

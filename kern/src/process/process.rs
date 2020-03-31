@@ -10,6 +10,12 @@ use crate::traps::TrapFrame;
 use crate::vm::*;
 use kernel_api::{OsError, OsResult};
 use core::mem;
+use crate::FILESYSTEM;
+use fat32::traits::FileSystem;
+use crate::fs::PiVFatHandle;
+use fat32::vfat::File;
+use fat32::traits::{Dir, Entry};
+use core::cmp::min;
 
 /// Type alias for the type of a process ID.
 pub type Id = u64;
@@ -63,7 +69,15 @@ impl Process {
 
         let mut p = Process::do_load(pn)?;
 
-        //FIXME: Set trapframe for the process.
+        // set up context
+        p.context.ttbr0 = VMM.get_baddr().as_u64();
+        p.context.ttbr1 = p.vmap.get_baddr().as_u64();
+        p.context.elr = Self::get_image_base().as_u64();
+        p.context.sp = Self::get_stack_top().as_u64();
+        // set bit 4 to be in aarch64 (0)
+        // set bits 0-3 to execute in EL0, correct sp (0)
+        // unmask irq interrupts bit 7 = 0
+        p.context.spsr = 0b1101_00_0000;
 
         Ok(p)
     }
@@ -72,30 +86,56 @@ impl Process {
     /// Allocates one page for stack with read/write permission, and N pages with read/write/execute
     /// permission to load file's contents.
     fn do_load<P: AsRef<Path>>(pn: P) -> OsResult<Process> {
-        unimplemented!();
+        use io::Read;
+        // create a process struct
+        let mut loaded_proc = Process::new()?;
+        loaded_proc.vmap.alloc(Self::get_stack_base(), PagePerm::RW); // allocate a page for the stack
+
+        // open the file
+        let mut bin_file: File<PiVFatHandle> = match FILESYSTEM.open_file(pn) {
+            Ok(f) => f,
+            Err(_) => return Err(OsError::IoError)
+        };
+
+        // allocate file pages, read into them
+        let bin_size = bin_file.size as usize;
+        let num_pages = (bin_size / PAGE_SIZE) + 1;
+
+        let mut remaining_bytes = bin_size;
+        for page_num in 0..num_pages {
+            let page_va = Self::get_image_base() + (PAGE_SIZE * (page_num as usize)).into();
+            let mut page = loaded_proc.vmap.alloc(page_va.into(), PagePerm::RWX); // allocate a page 
+            let bytes_to_read = min(PAGE_SIZE, remaining_bytes);
+
+            if let Err(_) = bin_file.read_exact(&mut page[0..bytes_to_read]) {
+                return Err(OsError::IoError);
+            }
+        }
+
+        Ok(loaded_proc)
     }
 
     /// Returns the highest `VirtualAddr` that is supported by this system.
     pub fn get_max_va() -> VirtualAddr {
-        unimplemented!();
+        (USER_IMG_BASE + USER_MAX_VM_SIZE).into()
     }
 
     /// Returns the `VirtualAddr` represents the base address of the user
     /// memory space.
     pub fn get_image_base() -> VirtualAddr {
-        unimplemented!();
+        USER_IMG_BASE.into()
     }
 
     /// Returns the `VirtualAddr` represents the base address of the user
     /// process's stack.
     pub fn get_stack_base() -> VirtualAddr {
-        unimplemented!();
+        USER_STACK_BASE.into()
     }
 
     /// Returns the `VirtualAddr` represents the top of the user process's
     /// stack.
     pub fn get_stack_top() -> VirtualAddr {
-        unimplemented!();
+        (USER_STACK_BASE.wrapping_add(PAGE_SIZE)).into()
     }
 
     /// Returns `true` if this process is ready to be scheduled.

@@ -78,7 +78,7 @@ fn kmain() -> ! {
     //kprintln!("kernel start...");
     unsafe {
         ALLOCATOR.initialize();
-        //FILESYSTEM.initialize();
+        FILESYSTEM.initialize();
         IRQ.initialize();
         VMM.initialize();
         SCHEDULER.initialize();
