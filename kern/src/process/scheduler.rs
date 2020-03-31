@@ -1,24 +1,15 @@
 use alloc::boxed::Box;
 use alloc::collections::vec_deque::VecDeque;
 use core::fmt;
-
-use aarch64::*;
-
 use crate::mutex::Mutex;
-use crate::param::{PAGE_MASK, PAGE_SIZE, TICK, USER_IMG_BASE};
+use crate::param::{TICK};
 use crate::process::{Id, Process, State};
 use crate::traps::TrapFrame;
-use crate::VMM;
-use crate::{tp1, tp2};
-use crate::init::_start;
-use crate::console::kprintln;
 use crate::IRQ;
 use crate::SCHEDULER;
-use crate::start_shell;
 extern crate pi;
 use pi::interrupt;
 use pi::timer;
-use core::time::Duration;
 use core::fmt::Formatter;
 
 /// Process scheduler for the entire machine.
@@ -27,8 +18,8 @@ pub struct GlobalScheduler(Mutex<Option<Scheduler>>);
 
 fn timer_handler(tf: &mut TrapFrame) {
     //kprintln!("timer interrupt...scheduling next one");
-    SCHEDULER.switch(State::Ready, tf);
     timer::tick_in(TICK); 
+    SCHEDULER.switch(State::Ready, tf);
 }
 
 impl GlobalScheduler {
@@ -59,8 +50,6 @@ impl GlobalScheduler {
     /// restoring the next process's trap frame into `tf`. For more details, see
     /// the documentation on `Scheduler::schedule_out()` and `Scheduler::switch_to()`.
     pub fn switch(&self, new_state: State, tf: &mut TrapFrame) -> Id {
-        //self.critical(|scheduler| kprintln!("{}", scheduler));
-        //kprintln!("TTBR0: {} TTBR1: {}", tf.ttbr0, tf.ttbr1);
         self.critical(|scheduler| scheduler.schedule_out(new_state, tf));
         self.switch_to(tf)
     }
@@ -117,48 +106,22 @@ impl GlobalScheduler {
     /// Initializes the scheduler and add userspace processes to the Scheduler
     pub unsafe fn initialize(&self) {
         *self.0.lock() = Some(Scheduler::new()); 
-        // setup first proc
-        /*let mut first_proc = Process::new().unwrap(); // if this panics we have big problems
-        first_proc.context.ttbr0 = VMM.get_baddr().as_u64();
-        first_proc.context.ttbr1 = first_proc.vmap.get_baddr().as_u64();
-        first_proc.context.elr = USER_IMG_BASE as u64;//start_shell as u64;
-        first_proc.context.sp = first_proc.stack.top().as_mut_ptr() as u64;
-        //first_proc.context.ttbr0 = 1 << 6;
-        //first_proc.context.ttbr1 = 1 << 7;
-        // set bit 4 to be in aarch64 (0)
-        // set bits 0-3 to execute in EL0, correct sp (0)
-        // unmask irq interrupts bit 7 = 0
-        first_proc.context.spsr = 0b1101_00_0000;
-        self.test_phase_3(&mut first_proc);
-        self.critical(|scheduler| scheduler.add(first_proc));
-
-        let mut second_proc = Process::new().unwrap(); // if this panics we have big problems
-        second_proc.context.elr = USER_IMG_BASE as u64;
-        second_proc.context.sp = second_proc.stack.top().as_mut_ptr() as u64;
-        second_proc.context.spsr = 0b1101_00_0000;
-        second_proc.context.ttbr0 = VMM.get_baddr().as_u64();
-        second_proc.context.ttbr1 = second_proc.vmap.get_baddr().as_u64();
-        self.test_phase_3(&mut second_proc);
-        self.critical(|scheduler| scheduler.add(second_proc));*/
         
-        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/sleep").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
-        //self.critical(|scheduler| scheduler.add(Process::load("/syscall_test").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
-        self.critical(|scheduler| scheduler.add(Process::load("/fib").unwrap()));
+        self.add(Process::load("/fib").unwrap());
+        self.add(Process::load("/fib").unwrap());
+        self.add(Process::load("/fib").unwrap());
+        self.add(Process::load("/fib").unwrap());
+        self.add(Process::load("/syscall_test").unwrap());
+        self.add(Process::load("/syscall_test").unwrap());
+        self.add(Process::load("/syscall_test").unwrap());
+        self.add(Process::load("/syscall_test").unwrap());
     }
 
     // The following method may be useful for testing Phase 3:
     //
     // * A method to load a extern function to the user process's page table.
     //
-    pub fn test_phase_3(&self, proc: &mut Process){
+    /*pub fn test_phase_3(&self, proc: &mut Process){
         use crate::vm::{VirtualAddr, PagePerm};
     
         let mut page = proc.vmap.alloc(
@@ -169,7 +132,7 @@ impl GlobalScheduler {
         };
     
         page[0..24].copy_from_slice(text);
-    }
+    }*/
 }
 
 #[derive(Debug)]
@@ -195,7 +158,7 @@ impl Scheduler {
     /// It is the caller's responsibility to ensure that the first time `switch`
     /// is called, that process is executing on the CPU.
     fn add(&mut self, mut process: Process) -> Option<Id> {
-        if (self.last_id == Some(u64::max_value())) {
+        if self.last_id == Some(u64::max_value()) {
             return None;
         }
 
@@ -239,15 +202,11 @@ impl Scheduler {
     /// If there is no process to switch to, returns `None`. Otherwise, returns
     /// `Some` of the next process`s process ID.
     fn switch_to(&mut self, tf: &mut TrapFrame) -> Option<Id> {
-        let mut next_idx = None;
-        for i in 0..self.processes.len() {
-            if self.processes.get_mut(i)?.is_ready() {
-                next_idx = Some(i);
-                break;
-            }
-        }
+        let next_idx = self.processes.iter_mut().position(|item: &mut Process| -> bool {
+            item.is_ready()
+        })?;
 
-        let mut next = self.processes.remove(next_idx?)?; // returns none if index out of bounds
+        let mut next = self.processes.remove(next_idx)?; // returns none if index out of bounds
         *tf = *next.context; // restore context
         next.state = State::Running;
         let next_id = next.context.tpidr;
@@ -263,10 +222,12 @@ impl Scheduler {
         if self.schedule_out(State::Dead, tf) {
             // dead boi will be at back of queue after schedule out
             // this method needs to be syncronized for this to work properly
-            let mut kill_me = self.processes.pop_back()?;
+            let kill_me = self.processes.pop_back()?;
             let pid = kill_me.context.tpidr;
             core::mem::drop(kill_me);
-            self.switch_to(tf);
+            if let None = self.switch_to(tf) {
+                aarch64::wfi();
+            }
             Some(pid)
         } else {
             None
@@ -277,15 +238,13 @@ impl Scheduler {
 impl fmt::Display for Scheduler {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for process in self.processes.iter() {
-            write!(f, "{} -> ", process.context.tpidr);
+            write!(f, "{}:{:#?} -> ", process.context.tpidr, process.state)?;
         }
         write!(f, "end")
     }
 }
 
-pub extern "C" fn  test_user_process() -> ! {
-    //kprintln!("hello");
-    //timer::spin_sleep(Duration::from_secs(5));
+/*pub extern "C" fn  test_user_process() -> ! {
     loop {
         let ms = 10000;
         let error: u64;
@@ -301,9 +260,6 @@ pub extern "C" fn  test_user_process() -> ! {
                  : "x0", "x7"
                  : "volatile");
         }
-
-        //kprintln!("error: {}", error);
-        //kprintln!("elapsed: {}", elapsed_ms);
     }
-}
+}*/
 

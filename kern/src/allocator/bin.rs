@@ -1,6 +1,5 @@
 use core::alloc::Layout;
 use core::fmt;
-use core::ptr;
 use core::cmp::max;
 use core::mem;
 
@@ -56,23 +55,6 @@ impl Allocator {
 
         k - 3
     }
-
-
-    // returns a pointer to memory area of requested size
-    fn alloc_for_size(size: usize) -> *mut u8 {
-        unimplemented!(); 
-    }
-
-    /*fn debug_bins(&self) {
-        println!("-----bins-----");
-        for i in 0..self.bins.len() {
-            print!("{}: ", i);
-            for node in self.bins[i].iter() {
-                print!("{:#x} -> ", node as usize);
-            }
-            println!();
-        }
-    }*/
 }
 
 impl LocalAlloc for Allocator {

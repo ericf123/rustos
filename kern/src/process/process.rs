@@ -1,9 +1,6 @@
 use alloc::boxed::Box;
 use shim::io;
 use shim::path::Path;
-
-use aarch64;
-
 use crate::param::*;
 use crate::process::{Stack, State};
 use crate::traps::TrapFrame;
@@ -14,8 +11,8 @@ use crate::FILESYSTEM;
 use fat32::traits::FileSystem;
 use crate::fs::PiVFatHandle;
 use fat32::vfat::File;
-use fat32::traits::{Dir, Entry};
 use core::cmp::min;
+use crate::allocator::util::align_down;
 
 /// Type alias for the type of a process ID.
 pub type Id = u64;
@@ -104,12 +101,13 @@ impl Process {
         let mut remaining_bytes = bin_size;
         for page_num in 0..num_pages {
             let page_va = Self::get_image_base() + (PAGE_SIZE * (page_num as usize)).into();
-            let mut page = loaded_proc.vmap.alloc(page_va.into(), PagePerm::RWX); // allocate a page 
+            let page = loaded_proc.vmap.alloc(page_va.into(), PagePerm::RWX); // allocate a page 
             let bytes_to_read = min(PAGE_SIZE, remaining_bytes);
 
             if let Err(_) = bin_file.read_exact(&mut page[0..bytes_to_read]) {
                 return Err(OsError::IoError);
             }
+            remaining_bytes -= bytes_to_read;
         }
 
         Ok(loaded_proc)
@@ -135,7 +133,8 @@ impl Process {
     /// Returns the `VirtualAddr` represents the top of the user process's
     /// stack.
     pub fn get_stack_top() -> VirtualAddr {
-        (USER_STACK_BASE.wrapping_add(PAGE_SIZE)).into()
+        //(USER_STACK_BASE.wrapping_add(PAGE_SIZE)).into()
+        align_down(usize::max_value(), 16).into()
     }
 
     /// Returns `true` if this process is ready to be scheduled.

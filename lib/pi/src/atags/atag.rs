@@ -1,6 +1,5 @@
 use crate::atags::raw;
 use core::slice;
-use core::str::{from_utf8};
 
 pub use crate::atags::raw::{Core, Mem};
 

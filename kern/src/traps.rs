@@ -5,8 +5,6 @@ mod syscall;
 pub mod irq;
 pub use self::frame::TrapFrame;
 
-use pi::interrupt::{Controller, Interrupt};
-
 use self::syndrome::Syndrome;
 use self::syscall::handle_syscall;
 use crate::console::kprintln;
@@ -15,7 +13,6 @@ extern crate pi;
 use pi::interrupt;
 use pi::timer;
 use core::time::Duration;
-use aarch64;
 use crate::IRQ;
 
 #[repr(u16)]
@@ -50,7 +47,7 @@ pub struct Info {
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info {
-        Info {source, kind: Kind::Synchronous } => match Syndrome::from(esr) {
+        Info {source, kind: Kind::Synchronous} => match Syndrome::from(esr) {
             Syndrome::Brk(b) => { 
                 //loop { kprintln!("elr: {:x}", tf.elr); }
                 //loop { kprintln!("tf: {:#?}", tf); timer::spin_sleep(Duration::from_millis(1000)); }
@@ -61,7 +58,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             Syndrome::Svc(num) => handle_syscall(num, tf),
             syndrome @ _ => kprintln!("no handler: {:#?}", syndrome),
         },
-        Info {source, kind: Kind::Irq} => {
+        Info {kind: Kind::Irq, ..} => {
             let int_controller = interrupt::Controller::new();
             for int in interrupt::Interrupt::iter() {
                 if int_controller.is_pending(*int) {

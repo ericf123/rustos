@@ -1,5 +1,5 @@
 mod linked_list;
-mod util;
+pub mod util;
 
 mod bin;
 mod bump;
@@ -12,7 +12,6 @@ mod tests;
 use core::alloc::{GlobalAlloc, Layout};
 use core::fmt;
 
-use crate::console::kprintln;
 use crate::mutex::Mutex;
 use pi::atags::{Atag, Atags};
 
@@ -75,7 +74,6 @@ extern "C" {
 ///
 /// This function is expected to return `Some` under all normal cirumstances.
 pub fn memory_map() -> Option<(usize, usize)> {
-    let page_size = 1 << 12;
     let binary_end = unsafe { (&__text_end as *const u8) as usize };
 
     // this assumes only one mem atag

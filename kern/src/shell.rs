@@ -1,7 +1,6 @@
 use shim::io;
 use shim::path::{Path, PathBuf, Component};
 use alloc::vec::Vec;
-use alloc::string::String;
 use stack_vec::StackVec;
 
 use pi::atags::Atags;
@@ -73,10 +72,10 @@ fn blinkyboi() {
 
 fn sleep(args: &mut StackVec<&str>) {
     let ms = match args.pop() {
-        Some(msStr) => match u64::from_str_radix(msStr, 10) {
+        Some(ms_str) => match u64::from_str_radix(ms_str, 10) {
             Ok(val) => val, 
             Err(_) => {
-                kprintln!("\ncannot parse u64 from {}", msStr);
+                kprintln!("\ncannot parse u64 from {}", ms_str);
                 return;
             }
         },
@@ -86,7 +85,7 @@ fn sleep(args: &mut StackVec<&str>) {
         } 
     };
 
-    kernel_api::syscall::sleep(Duration::from_millis(ms));
+    let _ = kernel_api::syscall::sleep(Duration::from_millis(ms));
 }
 
 fn ls<P: AsRef<Path>>(cwd: P, args: &mut StackVec<&str>) {
@@ -360,10 +359,6 @@ pub fn shell(prefix: &str) {
                     "cat" => cat(&cwd, command.args),
                     "cd" => cd(&mut cwd, command.args),
                     "files" => {
-                        use fat32::traits::Entry;
-                        use fat32::traits::FileSystem;
-                        use fat32::traits::Dir;
-
                         let root_dir = match (&FILESYSTEM).open("/") {
                             Ok(entry) => entry.into_dir().unwrap(),
                             _ => continue

@@ -1,6 +1,5 @@
 use core::panic::PanicInfo;
-use core::convert::TryInto;
-use crate::console::{kprint, kprintln};
+use crate::console::{kprintln};
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     // print monkey image and uh oh banner

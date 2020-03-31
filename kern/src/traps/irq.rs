@@ -37,7 +37,7 @@ impl Irq {
 
     pub fn handler_exists(&self, int: Interrupt) -> bool {
         match &self.0.lock().as_mut().expect("irq not initialized")[Interrupt::to_index(int)] {
-            Some(f) => true,
+            Some(_) => true,
             None => false
         }
     }

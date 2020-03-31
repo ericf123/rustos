@@ -1,6 +1,4 @@
-use core::iter::Chain;
 use core::ops::{Deref, DerefMut};
-use core::slice::Iter;
 
 use alloc::boxed::Box;
 use alloc::fmt;
@@ -10,11 +8,9 @@ use crate::allocator;
 use crate::param::*;
 use crate::vm::{PhysicalAddr, VirtualAddr};
 use crate::ALLOCATOR;
-use crate::console::kprintln;
 
 use aarch64::vmsa::*;
 use shim::const_assert_size;
-use alloc::vec;
 
 extern crate pi;
 use pi::common::{IO_BASE, IO_BASE_END};
@@ -138,10 +134,11 @@ impl PageTable {
     /// Panics if the virtual address is not properly aligned to page size.
     /// Panics if extracted L2index exceeds the number of L3PageTable.
     fn locate(va: VirtualAddr) -> (usize, usize) {
-        let l2_index = (va.as_usize() & (1 << 29)) >> 29; // bit 29
-        let l3_index = (va.as_usize() & (0x1FFF << 16)) >> 16; // bits 16-28
+        let l2_index = (va.as_usize() >> 29) & 0x1FFF;
+        let l3_index = (va.as_usize() >> 16) & 0x1FFF;
 
-        if (l2_index > 1) {
+
+        if l2_index > 1 {
             panic!("Level 2 Index greater than number of Level 3 tables: {}", l2_index);
         }
 
@@ -207,9 +204,9 @@ impl KernPageTable {
 
         // if this unwrap panics, we have massive problems
         let (_, end_addr) = allocator::memory_map().unwrap();
-        let mut i = 0x0000_0000;//start_addr as usize;//align_up(start_addr, PAGE_ALIGN); // this should always be 0, align is just a precaution
+        let mut i = 0x0000_0000;
         // create a page table entry for every possible page in phyiscal memory 
-        while i + PAGE_SIZE <= end_addr {
+        while i < end_addr {
             let mut entry = RawL3Entry::new(0);
 
             entry.set_value((i >> 16) as u64, RawL3Entry::ADDR);
@@ -229,7 +226,7 @@ impl KernPageTable {
         // we might be able to do this in the first loop
         i = IO_BASE as usize;
 
-        while i + PAGE_SIZE <= IO_BASE_END {
+        while i < IO_BASE_END {
             let mut entry = RawL3Entry::new(0);
 
             // mem set as dev, outer shareable (only diff between this and above)

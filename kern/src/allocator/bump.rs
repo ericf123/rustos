@@ -47,7 +47,7 @@ impl LocalAlloc for Allocator {
         let aligned = align_up(self.current, max(layout.align(), 8));
         if  aligned + layout.size() <= self.end {
             self.current = aligned.saturating_add(layout.size());
-            unsafe { return aligned as *mut u8; } 
+            return aligned as *mut u8;
         } else {
             return ptr::null_mut(); 
         }

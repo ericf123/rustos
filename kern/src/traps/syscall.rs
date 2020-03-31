@@ -1,14 +1,12 @@
 use alloc::boxed::Box;
 use core::time::Duration;
 
-use crate::console::{CONSOLE, kprintln, kprint};
+use crate::console::{kprint};
 use crate::process::State;
 use crate::process::state::EventPollFn;
-use crate::process::*;
 use crate::traps::TrapFrame;
 use crate::SCHEDULER;
 use kernel_api::*;
-use aarch64;
 extern crate pi;
 use pi::timer;
 
@@ -26,12 +24,6 @@ pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
         if timer::current_time() >= done_time {
             // save return value and ecode
             let ret_val = Duration::as_millis(&(timer::current_time() - done_time)) as u64;
-            /*unsafe {
-                asm!("mov x0, $0
-                      mov x7, #1"
-                    :: "r"(ret_val)
-                    :: "volatile");
-            }*/
             process.context.x_regs[0] = ret_val; // set actually elapsed ms
             process.context.x_regs[7] = 1; // no error
             return true;
@@ -61,8 +53,7 @@ pub fn sys_time(tf: &mut TrapFrame) {
 ///
 /// This system call does not take paramer and does not return any value.
 pub fn sys_exit(tf: &mut TrapFrame) {
-    SCHEDULER.kill(tf);
-    aarch64::wfi();
+    let _ = SCHEDULER.kill(tf);
 }
 
 /// Write to console.
@@ -87,7 +78,6 @@ pub fn sys_getpid(tf: &mut TrapFrame) {
 }
 
 pub fn handle_syscall(num: u16, tf: &mut TrapFrame) {
-    use crate::console::kprintln;
     match num as usize {
         NR_SLEEP => sys_sleep(tf.x_regs[0] as u32, tf),
         NR_WRITE => sys_write(tf.x_regs[0] as u8, tf),
